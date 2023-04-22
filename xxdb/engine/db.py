@@ -40,10 +40,10 @@ class DB:
 def create(
     db_name: str,
     disk_settings: DiskSettings = DiskSettings(),
-    datadir: Optional[str] = "data",
+    datadir: str = "data",
     exists_ok: bool = True,
 ) -> bool:
-    datadir_path = datadir and Path(datadir) or Path('.')
+    datadir_path = Path(datadir)
     if not datadir_path.exists():
         raise Exception()
 
