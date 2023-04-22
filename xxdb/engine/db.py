@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 from pathlib import Path
 
 from xxdb.engine.buffer import BufferPoolManager
@@ -62,14 +62,11 @@ def create(
     return True
 
 
-def open(db_name: str, datadir: str = "data", config_file: Optional[str] = '') -> DB:
-    if config_file:
-        config = Settings.parse_file(config_file)
-    else:
-        config = Settings()
+def open(db_name: str, datadir: str = "data", config: dict[str, Any] = {}) -> DB:
+    settings = Settings(**config)
 
     disk_mgr = DiskManager(Path(datadir), db_name)
-    bp_mgr = BufferPoolManager(disk_mgr, config.buffer_pool)
+    bp_mgr = BufferPoolManager(disk_mgr, settings.buffer_pool)
 
     db = DB(disk_mgr, bp_mgr)
     return db
