@@ -16,8 +16,7 @@ class DB:
         self.index = HashTable(self.disk_mgr.read_htkeys())
 
     async def close(self):
-        self.bp_mgr.flush_all()
-        self.disk_mgr.write_htkeys(self.index.keys)
+        await self.flush()
 
     async def get(self, key) -> Optional[list[bytes]]:
         if key in self.index:
@@ -34,6 +33,10 @@ class DB:
             async with self.bp_mgr.new_page() as page:
                 self.index[key] = page.id
                 page.put(data)
+
+    async def flush(self):
+        self.bp_mgr.flush_all()
+        self.disk_mgr.write_htkeys(self.index.keys)
 
 
 # Return: True if created a new meta file, False if meta file already exists

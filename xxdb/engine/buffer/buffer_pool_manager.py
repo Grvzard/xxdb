@@ -12,8 +12,8 @@ class BufferPoolManager:
         self.config = config
         self.replacer = getReplacer(config.replacer)
 
-    async def on_stop(self):
-        ...
+    # async def on_stop(self):
+    #     ...
 
     @asynccontextmanager
     async def new_page(self):
