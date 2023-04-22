@@ -16,7 +16,7 @@ class DiskSettings(BaseModel):
 
 class BufferPoolSettings(BaseModel):
     max_page_num: int = 100000
-    replacer: str = "lru"
+    replacer: str = "fifo"
 
 
 class Settings(BaseSettings):
