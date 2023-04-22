@@ -36,30 +36,30 @@ class DB:
                 page.put(data)
 
 
+# Return: True if created a new meta file, False if meta file already exists
 def create(
     db_name: str,
     disk_settings: DiskSettings = DiskSettings(),
     datadir: Optional[str] = "data",
-) -> None:
+    exists_ok: bool = True,
+) -> bool:
     datadir_path = datadir and Path(datadir) or Path('.')
     if not datadir_path.exists():
         raise Exception()
 
-    i = 0
-    try:
-        for t in "meta data indx".split():
-            (datadir_path / f"{db_name}.{t}.xxdb").touch(exist_ok=False)
-            i += 1
-    except Exception as e:
-        for t in "meta data indx".split()[:i]:
-            (datadir_path / f"{db_name}.{t}.xxdb").unlink()
-        raise e
+    meta_path = datadir_path / f"{db_name}.meta.xxdb"
 
-    with (datadir_path / f"{db_name}.meta.xxdb").open("w") as f_meta:
+    if meta_path.exists():
+        if not exists_ok:
+            raise Exception()
+        return False
+
+    with meta_path.open("w") as f_meta:
         f_meta.write(disk_settings.json())
+    return True
 
 
-def open(datadir: str, db_name: str, config_file: Optional[str] = '') -> DB:
+def open(db_name: str, datadir: str = "data", config_file: Optional[str] = '') -> DB:
     if config_file:
         config = Settings.parse_file(config_file)
     else:

@@ -18,8 +18,8 @@ class DiskManager:
         self.data_path = datadir_path / f"{db_name}.data.xxdb"
         self.indx_path = datadir_path / f"{db_name}.indx.xxdb"
 
-        self.f_data = self.data_path.open('r+b')
-        self.f_indx = self.indx_path.open('r+b')
+        self.f_data = self.data_path.open('a+b')
+        self.f_indx = self.indx_path.open('a+b')
 
         self.PAGE_SIZE = self.config.page_size
         self.BLANK_PAGE = b'\x00' * self.PAGE_SIZE
