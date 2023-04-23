@@ -4,6 +4,8 @@ from pathlib import Path
 
 from xxdb.engine.configs import DiskSettings
 
+__all__ = ("DiskManager",)
+
 
 # TODO: using async read/write to improve the qps.
 # it may require a deep thinking on how to make it coroutine-safe

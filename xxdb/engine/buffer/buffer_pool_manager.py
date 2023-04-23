@@ -2,15 +2,17 @@ from contextlib import asynccontextmanager
 
 from xxdb.engine.page import Page
 from xxdb.engine.configs import BufferPoolSettings
+from xxdb.engine.disk import DiskManager
 from .replacer import getReplacer
 
 
 class BufferPoolManager:
-    def __init__(self, disk_mgr, config: BufferPoolSettings):
+    def __init__(self, disk_mgr: DiskManager, config: BufferPoolSettings):
         self.disk_mgr = disk_mgr
-        self.pool = {}
+        self.pool: dict[int, Page] = {}
         self.config = config
         self.replacer = getReplacer(config.replacer)
+        self.dirty_pageids: set[int] = set()
 
     # async def on_stop(self):
     #     ...
@@ -27,6 +29,7 @@ class BufferPoolManager:
             yield page
         finally:
             page.is_dirty = True
+            self.dirty_pageids.add(page.id)
             page.pin_cnt -= 1
 
     @asynccontextmanager
@@ -45,16 +48,23 @@ class BufferPoolManager:
         try:
             yield page
         finally:
+            if page.is_dirty:
+                self.dirty_pageids.add(page.id)
             page.pin_cnt -= 1
 
     def flush_all(self) -> None:
-        for pageid, page in self.pool.items():
-            self.flush_page(page)
+        while 1:
+            if not self.dirty_pageids:
+                break
+            pageid = self.dirty_pageids.pop()
+            # with page_lock(pageid):
+            self.flush_page(self.pool[pageid])
 
     def flush_page(self, page: Page) -> None:
         if page.is_dirty:
             self.disk_mgr.write_page(page.id, page.array.dumps())
             page.is_dirty = False
+            self.dirty_pageids.discard(page.id)
 
     def try_evict(self) -> bool:
         if pageid_evicted := self.replacer.evict(self.pool):
