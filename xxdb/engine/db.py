@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Any
 from pathlib import Path
 
@@ -8,9 +9,11 @@ from xxdb.engine.configs import Settings, DiskSettings
 
 __all__ = ("DB", "create", "open")
 
+logger = logging.getLogger(__name__)
+
 
 class DB:
-    def __init__(self, disk_mgr, bp_mgr):
+    def __init__(self, disk_mgr: DiskManager, bp_mgr: BufferPoolManager):
         self.disk_mgr = disk_mgr
         self.bp_mgr = bp_mgr
         self.index = HashTable(self.disk_mgr.read_htkeys())
@@ -35,8 +38,10 @@ class DB:
                 page.put(data)
 
     async def flush(self):
+        logger.info("xxdb flushing...")
         self.bp_mgr.flush_all()
         self.disk_mgr.write_htkeys(self.index.keys)
+        logger.info("xxdb flush done")
 
 
 # Return: True if created a new meta file, False if meta file already exists

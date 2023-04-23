@@ -1,9 +1,13 @@
+import logging
 from contextlib import asynccontextmanager
 
 from xxdb.engine.page import Page
 from xxdb.engine.configs import BufferPoolSettings
 from xxdb.engine.disk import DiskManager
 from .replacer import getReplacer
+
+
+logger = logging.getLogger(__name__)
 
 
 class BufferPoolManager:
@@ -53,6 +57,7 @@ class BufferPoolManager:
             page.pin_cnt -= 1
 
     def flush_all(self) -> None:
+        logger.info("buffer pool flush all pages...")
         while 1:
             if not self.dirty_pageids:
                 break
@@ -62,6 +67,7 @@ class BufferPoolManager:
 
     def flush_page(self, page: Page) -> None:
         if page.is_dirty:
+            logger.debug(f"flush dirty page: {page.id}")
             self.disk_mgr.write_page(page.id, page.array.dumps())
             page.is_dirty = False
             self.dirty_pageids.discard(page.id)
