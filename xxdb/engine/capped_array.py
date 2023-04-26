@@ -47,7 +47,7 @@ class CappedArray:
             data_size = int.from_bytes(self.data[p : p + self.DATA_SIZE_COST], "little")
             p += self.DATA_SIZE_COST
             data = self.data[p : p + data_size]
-            data_set.append(data)
+            data_set.append(bytes(data))
             p += data_size
 
         return data_set

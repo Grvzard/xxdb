@@ -33,7 +33,7 @@ class DB:
             async with self.bp_mgr.fetch_page(pageid) as page:
                 return page.retrive()
 
-    async def put(self, key, data):
+    async def put(self, key, data) -> None:
         if key in self.index:
             pageid = self.index[key]
             async with self.bp_mgr.fetch_page(pageid) as page:
