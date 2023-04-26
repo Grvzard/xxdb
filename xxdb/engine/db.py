@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Any
+from typing import Optional
 from pathlib import Path
 
 from xxdb.engine.buffer import BufferPoolManager
@@ -7,15 +7,21 @@ from xxdb.engine.disk import DiskManager
 from xxdb.engine.hashtable import HashTable
 from xxdb.engine.configs import Settings, DiskSettings
 
-__all__ = ("DB", "create", "open")
+__all__ = ("DB", "create")
 
 logger = logging.getLogger(__name__)
 
 
 class DB:
-    def __init__(self, disk_mgr: DiskManager, bp_mgr: BufferPoolManager):
-        self.disk_mgr = disk_mgr
-        self.bp_mgr = bp_mgr
+    def __init__(
+        self,
+        db_name: str,
+        datadir: str = "data",
+        settings: dict = {},
+    ):
+        self.settings = Settings(**settings)
+        self.disk_mgr = DiskManager(Path(datadir), db_name)
+        self.bp_mgr = BufferPoolManager(self.disk_mgr, self.settings.buffer_pool)
         self.index = HashTable(self.disk_mgr.read_htkeys())
 
     async def close(self):
@@ -65,13 +71,3 @@ def create(
     with meta_path.open("w") as f_meta:
         f_meta.write(disk_settings.json())
     return True
-
-
-def open(db_name: str, datadir: str = "data", config: dict[str, Any] = {}) -> DB:
-    settings = Settings(**config)
-
-    disk_mgr = DiskManager(Path(datadir), db_name)
-    bp_mgr = BufferPoolManager(disk_mgr, settings.buffer_pool)
-
-    db = DB(disk_mgr, bp_mgr)
-    return db
