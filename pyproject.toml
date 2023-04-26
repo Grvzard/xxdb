@@ -38,3 +38,6 @@ addopts = [
 [tool.black]
 line-length = 120
 skip-string-normalization = true
+
+[tool.ruff]
+line-length = 120
