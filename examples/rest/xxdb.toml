@@ -1,0 +1,12 @@
+
+[server]
+port = 7791
+reload = true
+
+[[xxdb.endpoints]]
+path = "data"
+name = "test"
+
+[[xxdb.endpoints]]
+path = "data"
+name = "demo"
