@@ -1,3 +1,6 @@
+from functools import partial
+import asyncio
+
 from fastapi import FastAPI
 
 from xxdb.engine.db import create, DB
@@ -13,6 +16,12 @@ async def close_db():
         await db.close()
 
 
+async def flush_db_periodically(db: DB, seconds: int):
+    while 1:
+        await asyncio.sleep(seconds)
+        await db.flush()
+
+
 def create_app(config: ApiConfig) -> FastAPI:
     app = FastAPI()
 
@@ -21,6 +30,9 @@ def create_app(config: ApiConfig) -> FastAPI:
     for db in config.endpoints:
         create(db.name, datadir=db.path)
         database[db.name] = DB(db.name, db.path, db.settings)
+        app.add_event_handler(
+            "startup", partial(asyncio.create_task, flush_db_periodically(database[db.name], db.flush_period))
+        )
 
     app.add_event_handler("shutdown", close_db)
 
