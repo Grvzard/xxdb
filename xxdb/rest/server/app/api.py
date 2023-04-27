@@ -12,8 +12,7 @@ router = APIRouter()
 
 
 @router.put("/data/{db_name}/{key}")
-async def put_data(db_name: str, key: int, value: Annotated[str, Body(media_type="plain/text")]):
-    print(value)
+async def put_data(db_name: str, key: int, value: Annotated[str, Body(embed=True)]):
     if db_name not in database:
         return {"ok": False, "detail": f"db: {db_name} not found"}
 
