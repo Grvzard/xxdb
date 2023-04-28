@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from xxdb.engine.page import Page
-from xxdb.engine.configs import BufferPoolSettings
+from xxdb.engine.config import BufferPoolSettings
 from xxdb.engine.disk import DiskManager
 from .replacer import getReplacer
 

@@ -5,7 +5,7 @@ from pathlib import Path
 from xxdb.engine.buffer import BufferPoolManager
 from xxdb.engine.disk import DiskManager
 from xxdb.engine.hashtable import HashTable
-from xxdb.engine.configs import Settings, DiskSettings
+from xxdb.engine.config import InstanceSettings, DiskSettings
 
 __all__ = ("DB", "create")
 
@@ -19,7 +19,7 @@ class DB:
         datadir: str = "data",
         settings: dict = {},
     ):
-        self.settings = Settings(**settings)
+        self.settings = InstanceSettings(**settings)
         self.disk_mgr = DiskManager(Path(datadir), db_name)
         self.bp_mgr = BufferPoolManager(self.disk_mgr, self.settings.buffer_pool)
         self.index = HashTable(self.disk_mgr.read_htkeys())
@@ -46,7 +46,7 @@ class DB:
     async def flush(self):
         logger.info("xxdb flushing...")
         self.bp_mgr.flush_all()
-        self.disk_mgr.write_htkeys(self.index.keys)
+        self.disk_mgr.write_htkeys(self.index.keys_ondisk)
         logger.info("xxdb flush done")
 
 

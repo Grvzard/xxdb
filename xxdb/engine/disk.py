@@ -2,7 +2,7 @@
 import struct
 from pathlib import Path
 
-from xxdb.engine.configs import DiskSettings
+from xxdb.engine.config import DiskSettings
 
 __all__ = ("DiskManager",)
 

@@ -3,9 +3,9 @@ import httpx
 
 
 class Client:
-    def __init__(self, dsn):
+    def __init__(self, dsn: str):
         self._dsn = dsn
-        self._http_client = httpx.AsyncClient(base_url=f"http://{dsn}", timeout=10)
+        self._http_client = httpx.AsyncClient(base_url=dsn, timeout=10)
 
     @retry(stop=stop_after_attempt(2), reraise=True)
     async def get(self, db, key) -> dict:

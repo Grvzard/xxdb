@@ -27,7 +27,7 @@ def create_app(config: ApiConfig) -> FastAPI:
 
     app.include_router(api.router)
 
-    for db in config.endpoints:
+    for db in config.databases:
         create(db.name, datadir=db.path)
         database[db.name] = DB(db.name, db.path, db.settings)
         app.add_event_handler(
