@@ -21,5 +21,5 @@ class Page:
         self.array.append(data)
         self.is_dirty = True
 
-    def retrive(self):
+    def retrive(self) -> list[bytes]:
         return self.array.retrive()

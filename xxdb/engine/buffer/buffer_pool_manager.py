@@ -13,10 +13,12 @@ logger = logging.getLogger(__name__)
 class BufferPoolManager:
     def __init__(self, disk_mgr: DiskManager, config: BufferPoolSettings):
         self.disk_mgr = disk_mgr
-        self.pool: dict[int, Page] = {}
         self.config = config
-        self.replacer = getReplacer(config.replacer)
+
+        self.pool: dict[int, Page] = {}
+        self.replacer = getReplacer(self.config.replacer)
         self.dirty_pageids: set[int] = set()
+        self._max_page_amount = self.config.max_size // self.disk_mgr.config.page_size
 
     # async def on_stop(self):
     #     ...
@@ -39,7 +41,7 @@ class BufferPoolManager:
     @asynccontextmanager
     async def fetch_page(self, pageid):
         if pageid not in self.pool:
-            if len(self.pool) >= self.config.max_page_num and not self.try_evict():
+            if len(self.pool) >= self._max_page_amount and not self.try_evict():
                 raise Exception()
 
             page_data = self.disk_mgr.read_page(pageid)

@@ -3,7 +3,7 @@ import asyncio
 
 from fastapi import FastAPI
 
-from xxdb.engine.db import create, DB
+from xxdb.engine.db import DB
 from .config import ApiConfig
 from .database import database
 from . import api
@@ -28,7 +28,6 @@ def create_app(config: ApiConfig) -> FastAPI:
     app.include_router(api.router)
 
     for db in config.databases:
-        create(db.name, datadir=db.path)
         database[db.name] = DB(db.name, db.path, db.settings)
         app.add_event_handler(
             "startup", partial(asyncio.create_task, flush_db_periodically(database[db.name], db.flush_period))
