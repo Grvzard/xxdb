@@ -34,7 +34,7 @@ class BufferPoolSettings(BaseModel):
 
 
 class PrometheusSettings(BaseModel):
-    ...
+    enable: bool = True
 
 
 class InstanceSettings(BaseModel):

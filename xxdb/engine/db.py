@@ -3,6 +3,7 @@ from pathlib import Path
 
 from xxdb.engine.buffer import BufferPoolManager
 from xxdb.engine.disk import DiskManager
+from xxdb.engine.metrics import PrometheusClient
 from xxdb.engine.hashtable import HashTable
 from xxdb.engine.config import InstanceSettings, DbMeta
 from xxdb.engine.schema import Schema
@@ -36,6 +37,9 @@ class DB:
         self._disk_mgr = DiskManager(datadir, self._name, self._meta.disk)
         self._bp_mgr = BufferPoolManager(self._disk_mgr, self._config.buffer_pool)
         self._indices = HashTable(self._disk_mgr.read_htkeys())
+        self._prom_client = None
+        if self._config.prometheus.enable:
+            self._prom_client = PrometheusClient(self._bp_mgr)
 
     async def close(self):
         await self.flush()
@@ -74,9 +78,15 @@ class DB:
 
     async def flush(self):
         logger.info("xxdb flushing...")
-        self._bp_mgr.flush_all()
+        await self._bp_mgr.flush_all()
         self._disk_mgr.write_htkeys(self._indices.keys_ondisk)
         logger.info("xxdb flush done")
+
+    @property
+    def prom_registry(self):
+        if self._prom_client:
+            return self._prom_client.registry
+        return None
 
 
 # Return: True if created a new meta file, False if meta file already exists

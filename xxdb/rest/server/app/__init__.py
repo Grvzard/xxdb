@@ -2,6 +2,7 @@ from functools import partial
 import asyncio
 
 from fastapi import FastAPI
+from prometheus_client import make_asgi_app
 
 from xxdb.engine.db import DB
 from .config import ApiConfig
@@ -28,10 +29,14 @@ def create_app(config: ApiConfig) -> FastAPI:
     app.include_router(api.router)
 
     for db in config.databases:
-        database[db.name] = DB(db.name, db.path, db.settings)
+        db_instance = DB(db.name, db.path, db.settings)
+        database[db.name] = db_instance
         app.add_event_handler(
-            "startup", partial(asyncio.create_task, flush_db_periodically(database[db.name], db.flush_period))
+            "startup", partial(asyncio.create_task, flush_db_periodically(db_instance, db.flush_period))
         )
+        if reg := db_instance.prom_registry:
+            _metrics_app = make_asgi_app(reg)
+            app.mount(f"/metrics/{db.name}", _metrics_app)
 
     app.add_event_handler("shutdown", close_db)
 

@@ -5,13 +5,15 @@ from xxdb.engine.page import Page
 from xxdb.engine.config import BufferPoolSettings
 from xxdb.engine.disk import DiskManager
 from .replacer import getReplacer
+from .event import BufferPoolEventEmitter
 
 
 logger = logging.getLogger(__name__)
 
 
-class BufferPoolManager:
+class BufferPoolManager(BufferPoolEventEmitter):
     def __init__(self, disk_mgr: DiskManager, config: BufferPoolSettings):
+        super().__init__()
         self.disk_mgr = disk_mgr
         self.config = config
 
@@ -41,7 +43,7 @@ class BufferPoolManager:
     @asynccontextmanager
     async def fetch_page(self, pageid):
         if pageid not in self.pool:
-            if len(self.pool) >= self._max_page_amount and not self.try_evict():
+            if len(self.pool) >= self._max_page_amount and not await self.try_evict():
                 raise Exception()
 
             page_data = self.disk_mgr.read_page(pageid)
@@ -58,14 +60,18 @@ class BufferPoolManager:
                 self.dirty_pageids.add(page.id)
             page.pin_cnt -= 1
 
-    def flush_all(self) -> None:
+    async def flush_all(self) -> None:
         logger.info("buffer pool flush all pages...")
+        flush_cnt = 0
         while 1:
             if not self.dirty_pageids:
                 break
             pageid = self.dirty_pageids.pop()
             # with page_lock(pageid):
             self.flush_page(self.pool[pageid])
+            flush_cnt += 1
+
+        await self._emit("bufferpool_flush_all", flush_cnt)
 
     def flush_page(self, page: Page) -> None:
         if page.is_dirty:
@@ -74,10 +80,11 @@ class BufferPoolManager:
             page.is_dirty = False
             self.dirty_pageids.discard(page.id)
 
-    def try_evict(self) -> bool:
+    async def try_evict(self) -> bool:
         if pageid_evicted := self.replacer.evict(self.pool):
             page = self.pool.pop(pageid_evicted)
             self.flush_page(page)
+            await self._emit("bufferpool_evict")
             return True
 
         return False
