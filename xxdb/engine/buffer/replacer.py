@@ -58,16 +58,18 @@ class LrukReplacer(Replacer):
         ...
 
 
-def getReplacer(config: str) -> Replacer:
-    if config == "fifo":
+def getReplacer(typ: str) -> Replacer:
+    typ = typ.lower()
+    if typ == "fifo":
         return FifoReplacer()
-    elif config == "lru":
+    elif typ == "lru":
         return LruReplacer()
-    elif config.startswith("lru-"):
+    elif typ.startswith("lru-"):
         try:
-            return LrukReplacer(int(config[4:]))
-        except Exception as e:
-            _ = e
-            raise Exception("Unexpected config")
+            k = int(typ[4:])
+        except Exception:
+            raise Exception("Unexpected buffer pool replacer type")
+        else:
+            return LrukReplacer(k)
     else:
         return FifoReplacer()

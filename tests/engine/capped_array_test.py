@@ -1,20 +1,20 @@
 from xxdb.engine.capped_array import CappedArray
 
 
-def ttest():
-    print('[capped_array] test')
+def test():
+    test_size = 40
+    data = b'\x00' * test_size
 
-    data = b'\x00' * 40
     arr = CappedArray(data)
     arr.append(b'hello')
     arr.append(b'  okok')
-    print(arr.dumps())
+    assert len(arr.dumps()) == test_size
 
-    print('--- arr-2 ---')
     arr2 = CappedArray(arr.dumps())
-    print(arr2.retrive())
+    assert arr2.retrive() == [b'hello', b'  okok']
+
     arr2.append(b'1' * 21)
-    print(arr2.retrive())
+
     arr2.append(b'2' * 11)
     arr2.append(b'3' * 21)
-    print(arr2.retrive())
+    assert arr2.retrive() == [b'22222222222', b'333333333333333333333']

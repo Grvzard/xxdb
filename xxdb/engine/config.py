@@ -1,18 +1,22 @@
 from typing import Literal
 
 from pydantic import BaseModel
-from pb_encoding import SupportedType
+from pb_encoding import SupportedType as ColumnType
 
 
 class DiskSettings(BaseModel):
     page_size: int = 2048
-    index_key_size: Literal[4, 8] = 8
+
+
+class IndexSettings(BaseModel):
+    typ: Literal['hashtable'] = 'hashtable'
+    key_size: Literal[4, 8] = 8
 
 
 class DbColumn(BaseModel):
     num: int
     name: str
-    type: SupportedType
+    type: ColumnType
 
 
 class DbSchema(BaseModel):
@@ -24,6 +28,7 @@ class DbSchema(BaseModel):
 
 class DbMeta(BaseModel):
     disk: DiskSettings = DiskSettings()
+    index: IndexSettings = IndexSettings()
     comment: str = ''
     data_schema: None | DbSchema = None
 

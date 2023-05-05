@@ -1,5 +1,5 @@
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 
 from xxdb.engine.page import Page
 from xxdb.engine.config import BufferPoolSettings
@@ -22,23 +22,20 @@ class BufferPoolManager(BufferPoolEventEmitter):
         self.dirty_pageids: set[int] = set()
         self._max_page_amount = self.config.max_size // self.disk_mgr.config.page_size
 
-    # async def on_stop(self):
-    #     ...
-
-    @asynccontextmanager
-    async def new_page(self):
+    @contextmanager
+    def new_page(self):
         page_data, pageid = self.disk_mgr.new_page()
         page = Page(page_data, pageid)
         self.pool[pageid] = page
 
         self.replacer.record_access(pageid)
-        page.pin_cnt += 1
+        page.pin()
         try:
             yield page
         finally:
             page.is_dirty = True
             self.dirty_pageids.add(page.id)
-            page.pin_cnt -= 1
+            page.unpin()
 
     @asynccontextmanager
     async def fetch_page(self, pageid):
@@ -52,13 +49,13 @@ class BufferPoolManager(BufferPoolEventEmitter):
         page = self.pool[pageid]
 
         self.replacer.record_access(pageid)
-        page.pin_cnt += 1
+        page.pin()
         try:
             yield page
         finally:
             if page.is_dirty:
                 self.dirty_pageids.add(page.id)
-            page.pin_cnt -= 1
+            page.unpin()
 
     async def flush_all(self) -> None:
         logger.info("buffer pool flush all pages...")
@@ -76,7 +73,7 @@ class BufferPoolManager(BufferPoolEventEmitter):
     def flush_page(self, page: Page) -> None:
         if page.is_dirty:
             logger.debug(f"flush dirty page: {page.id}")
-            self.disk_mgr.write_page(page.id, page.array.dumps())
+            self.disk_mgr.write_page(page.id, page.dumps())
             page.is_dirty = False
             self.dirty_pageids.discard(page.id)
 

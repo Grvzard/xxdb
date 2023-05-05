@@ -7,6 +7,7 @@ from xxdb.engine.metrics import PrometheusClient
 from xxdb.engine.hashtable import HashTable
 from xxdb.engine.config import InstanceSettings, DbMeta
 from xxdb.engine.schema import Schema
+from .typing import DataGetModes
 
 __all__ = ("DB", "create", "InstanceSettings", "DbMeta")
 
@@ -36,7 +37,9 @@ class DB:
 
         self._disk_mgr = DiskManager(datadir, self._name, self._meta.disk)
         self._bp_mgr = BufferPoolManager(self._disk_mgr, self._config.buffer_pool)
-        self._indices = HashTable(self._disk_mgr.read_htkeys())
+
+        idx_path = datadir_path / f"{self._name}.idx.xxdb"
+        self._indices = HashTable(idx_path, self._meta.index)
         self._prom_client = None
         if self._config.prometheus.enable:
             self._prom_client = PrometheusClient(self._bp_mgr)
@@ -44,22 +47,24 @@ class DB:
     async def close(self):
         await self.flush()
 
-    async def get(self, key) -> None | list[bytes] | list[dict]:
-        data_list = []
-        if key in self._indices:
-            pageid = self._indices[key]
-            async with self._bp_mgr.fetch_page(pageid) as page:
-                data_list = page.retrive()
+    async def get(self, key, mode: DataGetModes = "bytes") -> None | list[bytes] | list[dict] | bytes:
+        pageid = self._indices[key]
+        if pageid is None:
+            return None
 
-            if self._schema:
-                try:
-                    return [self._schema.unpack(_) for _ in data_list]
-                except Exception as e:
-                    _ = e
+        async with self._bp_mgr.fetch_page(pageid) as page:
+            if mode == "dict":
+                if not self._schema:
+                    raise Exception()
+                return [self._schema.unpack(_) for _ in page.retrive()]
 
-            return data_list
+            elif mode == "bytes":
+                return page.retrive()
 
-        return None
+            elif mode == "raw":
+                return page.dumps_data()
+
+        raise Exception()
 
     async def put(self, key, data: bytes | dict) -> None:
         if isinstance(data, dict):
@@ -67,19 +72,19 @@ class DB:
                 raise Exception("db does not have a schema")
             data = self._schema.pack(data)
 
-        if key in self._indices:
-            pageid = self._indices[key]
+        pageid = self._indices[key]
+        if pageid is not None:
             async with self._bp_mgr.fetch_page(pageid) as page:
                 page.put(data)
         else:
-            async with self._bp_mgr.new_page() as page:
+            with self._bp_mgr.new_page() as page:
                 self._indices[key] = page.id
                 page.put(data)
 
     async def flush(self):
         logger.info("xxdb flushing...")
         await self._bp_mgr.flush_all()
-        self._disk_mgr.write_htkeys(self._indices.keys_ondisk)
+        self._indices.flush()
         logger.info("xxdb flush done")
 
     @property

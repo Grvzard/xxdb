@@ -1,25 +1,31 @@
 # Referenced by: BufferPoolManager
-
 import asyncio
 
 from xxdb.engine.capped_array import CappedArray
 
 
-class Page:
+class Page(CappedArray):
     def __init__(self, data: bytes, id: int):
-        self.array = CappedArray(data)
-        self.id = id
-        self.lock = asyncio.Lock()
+        super().__init__(data)
+        self._id = id
+        self._lock = asyncio.Lock()
+        self._pin_cnt = 0
         self.is_dirty = False
-        self.pin_cnt = 0
 
     @property
     def evictable(self):
-        return self.pin_cnt == 0
+        return self._pin_cnt == 0
+
+    def pin(self) -> None:
+        self._pin_cnt += 1
+
+    def unpin(self) -> None:
+        self._pin_cnt -= 1
+
+    @property
+    def id(self):
+        return self._id
 
     def put(self, data: bytes):
-        self.array.append(data)
+        super().append(data)
         self.is_dirty = True
-
-    def retrive(self) -> list[bytes]:
-        return self.array.retrive()

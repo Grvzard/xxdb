@@ -1,5 +1,4 @@
 # Referenced by: DB
-import struct
 from pathlib import Path
 
 from xxdb.engine.config import DiskSettings
@@ -17,19 +16,19 @@ class DiskManager:
         self.db_name = db_name
         self.config = settings
 
-        self._index_format = {
-            4: "<IL",
-            8: "<QL",
-        }[self.config.index_key_size]
+        # self._index_format = {
+        #     4: "<IL",
+        #     8: "<QL",
+        # }[self.config.index_key_size]
 
         self._dat_path = datadir_path / f"{db_name}.dat.xxdb"
-        self._idx_path = datadir_path / f"{db_name}.idx.xxdb"
+        # self._idx_path = datadir_path / f"{db_name}.idx.xxdb"
 
         self._dat_path.touch(exist_ok=True)
-        self._idx_path.touch(exist_ok=True)
+        # self._idx_path.touch(exist_ok=True)
 
         self._f_dat = self._dat_path.open('r+b')
-        self._f_idx = self._idx_path.open('r+b')
+        # self._f_idx = self._idx_path.open('r+b')
 
         self._next_pageid = (self.dat_file_size - self.META_PAGE_SIZE) // self.config.page_size
 
@@ -44,7 +43,7 @@ class DiskManager:
     #     return pageid * self.config.page_size
 
     def close(self):
-        self._f_idx.close()
+        # self._f_idx.close()
         self._f_dat.close()
 
     def new_page(self) -> tuple[bytes, int]:
@@ -77,21 +76,21 @@ class DiskManager:
         fp.seek(0)
         fp.write(meta_bytes)
 
-    def read_htkeys(self) -> list[tuple[int, int]]:
-        self._f_idx.seek(0)
-        buffer = self._f_idx.read()
-        keys = struct.iter_unpack(self._index_format, buffer)
-        return list(keys)
+    # def read_htkeys(self) -> list[tuple[int, int]]:
+    #     self._f_idx.seek(0)
+    #     buffer = self._f_idx.read()
+    #     keys = struct.iter_unpack(self._index_format, buffer)
+    #     return list(keys)
 
-    def write_htkeys(self, keys: list[tuple[int, int]]) -> None:
-        buffer = bytearray()
-        for i in range(len(keys)):
-            key, value = keys[i]
-            buffer += struct.pack(self._index_format, key, value)
+    # def write_htkeys(self, keys: list[tuple[int, int]]) -> None:
+    #     buffer = bytearray()
+    #     for i in range(len(keys)):
+    #         key, value = keys[i]
+    #         buffer += struct.pack(self._index_format, key, value)
 
-        self._f_idx.seek(0)
-        self._f_idx.write(buffer)
-        self._f_idx.flush()
+    #     self._f_idx.seek(0)
+    #     self._f_idx.write(buffer)
+    #     self._f_idx.flush()
 
     # def read_htval(self):
     #     ...
