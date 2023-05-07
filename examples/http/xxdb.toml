@@ -1,0 +1,9 @@
+
+[server]
+port = 7791
+reload = true
+
+[[app.databases]]
+path = "data"
+name = "demo"
+settings.prometheus.enable = true

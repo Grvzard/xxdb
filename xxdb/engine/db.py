@@ -6,7 +6,7 @@ from xxdb.engine.disk import DiskManager
 from xxdb.engine.metrics import PrometheusClient
 from xxdb.engine.hashtable import HashTable
 from xxdb.engine.config import InstanceSettings, DbMeta
-from xxdb.engine.schema import Schema
+from xxdb.engine.schema import Schema, DbSchema
 from .typing import DataGetModes
 
 __all__ = ("DB", "create", "InstanceSettings", "DbMeta")
@@ -44,6 +44,10 @@ class DB:
         if self._config.prometheus.enable:
             self._prom_client = PrometheusClient(self._bp_mgr)
 
+    @property
+    def data_schema(self) -> None | DbSchema:
+        return self._meta.data_schema
+
     async def close(self):
         await self.flush()
 
@@ -56,10 +60,10 @@ class DB:
             if mode == "dict":
                 if not self._schema:
                     raise Exception()
-                return [self._schema.unpack(_) for _ in page.retrive()]
+                return [self._schema.unpack(_) for _ in page.retrieve()]
 
             elif mode == "bytes":
-                return page.retrive()
+                return page.retrieve()
 
             elif mode == "raw":
                 return page.dumps_data()

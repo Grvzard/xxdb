@@ -18,6 +18,7 @@ class PrometheusClient(BufferPoolEventListener):
     def registry(self):
         return self._reg
 
+    # @override
     async def on_bufferpool_evict(self):
         self._bufferpool_evict_cnt.inc()
 

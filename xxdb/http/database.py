@@ -1,4 +1,4 @@
 from xxdb.engine.db import DB
 
 
-database: dict[str, DB] = {}
+DATABASE: dict[str, DB] = {}

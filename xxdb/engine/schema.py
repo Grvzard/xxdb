@@ -2,6 +2,8 @@ from pb_encoding import getEncoder, getDecoder
 
 from xxdb.engine.config import DbSchema
 
+__all__ = ("Schema", "DbSchema")
+
 
 class Schema:
     def __init__(self, schema: DbSchema) -> None:
@@ -21,4 +23,4 @@ class Schema:
         for col in self._columns:
             getEncoder(col.type)(data.__iadd__, raw_data[col.name])
 
-        return data
+        return bytes(data)

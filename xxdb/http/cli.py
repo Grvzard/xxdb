@@ -2,7 +2,7 @@ import asyncio
 
 import typer
 
-from . import Server
+from .server import Server
 
 
 cli = typer.Typer()

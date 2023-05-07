@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package xxdb;
+
+message AuthRequest {
+    string dbname = 1;
+    string payload = 2;
+}
+
+message CommonRequest {
+    string command = 1;  // required
+    optional string op_key = 2;
+    optional bytes put_payload = 3;
+}
+
+message CommonResponse {
+    enum Status {
+        OK = 0;
+        FAILED = 1;
+        ERROR = 2;
+    }
+    Status status = 1;
+    string auth_payload = 2;
+    string error_payload = 3;
+    bytes get_payload = 4;
+}

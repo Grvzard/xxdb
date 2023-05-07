@@ -10,5 +10,6 @@ class DbSettings(BaseModel):
     flush_period: int = 5  # in seconds
 
 
-class ApiConfig(BaseModel):
+class AppConfig(BaseModel):
     databases: list[DbSettings]
+    cors_origins: list[str] = []
