@@ -13,14 +13,15 @@ dependencies = [
 
 [project.optional-dependencies]
 rest = [
-    "fastapi",
     "typer",
+    "starlette",  # server requires
     "httpx",  # client requires
     "tenacity",  # client requires
+    "aiohttp",  # client requires
 ]
 
 [project.scripts]
-xxdb-rest-server = "xxdb.rest.server.cli:cli"
+xxdb = "xxdb.http.cli:cli"
 
 [tool.hatch.version]
 path = "xxdb/__init__.py"

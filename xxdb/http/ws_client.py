@@ -26,7 +26,7 @@ class Client:
         if dsn[-1] != '/':
             dsn += '/'
         self._dsn = dsn + dbname
-        self._session = ClientSession()
+        self._session = None
         self._ws_lock = asyncio.Lock()
         self._ws = None
         self._schema = None
@@ -34,6 +34,9 @@ class Client:
 
     async def connect(self):
         await self.close()
+        if self._session is None:
+            self._session = ClientSession()
+
         ws = await self._session.ws_connect(self._dsn)
         pb_req = pb.AuthRequest(dbname=self._dbname, payload="test")
 
@@ -79,9 +82,12 @@ class Client:
             self._idle_cnt += 1
 
     async def close(self):
-        if self._ws:
+        if self._ws is not None:
             await self._ws.close()
             self._ws = None
+        if self._session is not None:
+            await self._session.close()
+            self._session = None
         self._schema = None
         logger.info("client connection closed")
 
@@ -96,11 +102,11 @@ class Client:
         pb_req.op_key = str(key)
 
         self._idle_cnt = 0
-        await self._ws_lock.acquire()
-        self._ws_lock.release()
-
-        await ws.send_bytes(pb_req.SerializeToString())
-        msg = await ws.receive()
+        # await self._ws_lock.acquire()
+        # self._ws_lock.release()
+        async with self._ws_lock:
+            await ws.send_bytes(pb_req.SerializeToString())
+            msg = await ws.receive()
         if msg.type == WSMsgType.BINARY:
             pb_resp = pb.CommonResponse()
             pb_resp.ParseFromString(msg.data)
@@ -130,11 +136,12 @@ class Client:
         pb_req.put_payload = schema.pack(value)
 
         self._idle_cnt = 0
-        await self._ws_lock.acquire()
-        self._ws_lock.release()
+        # await self._ws_lock.acquire()
+        # self._ws_lock.release()
+        async with self._ws_lock:
+            await ws.send_bytes(pb_req.SerializeToString())
+            msg = await ws.receive()
 
-        await ws.send_bytes(pb_req.SerializeToString())
-        msg = await ws.receive()
         if msg.type == WSMsgType.BINARY:
             pb_resp = pb.CommonResponse()
             pb_resp.ParseFromString(msg.data)
