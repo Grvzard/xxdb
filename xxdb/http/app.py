@@ -2,6 +2,7 @@ from functools import partial
 import asyncio
 
 from starlette.applications import Starlette
+from starlette.responses import Response
 from prometheus_client import make_asgi_app
 
 from xxdb.engine.db import DB
@@ -25,7 +26,7 @@ async def flush_db_periodically(db: DB, seconds: int):
 
 async def ping(request):
     _ = request
-    return "pong"
+    return Response("pong", media_type="text/plain")
 
 
 def create_app(config: AppConfig) -> Starlette:
