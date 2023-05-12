@@ -1,9 +1,10 @@
 # Referenced by: DB
 from pathlib import Path
 
-from xxdb.engine.config import DiskSettings
+from xxdb.engine.page import Page, PageFactory
+from xxdb.engine.config import DiskConfig as DiskConfig
 
-__all__ = ("DiskManager",)
+__all__ = ("DiskManager", "DiskConfig")
 
 
 # TODO: using async read/write to improve the qps.
@@ -11,15 +12,12 @@ __all__ = ("DiskManager",)
 class DiskManager:
     META_PAGE_SIZE = 16 * 1024
 
-    def __init__(self, datadir: str | Path, db_name: str, settings: DiskSettings):
+    def __init__(self, datadir: str | Path, db_name: str, config: DiskConfig):
         datadir_path = Path(datadir)
         self.db_name = db_name
-        self.config = settings
+        self.config = config
 
-        # self._index_format = {
-        #     4: "<IL",
-        #     8: "<QL",
-        # }[self.config.index_key_size]
+        self.Page = PageFactory(self.config.page)
 
         self._dat_path = datadir_path / f"{db_name}.dat.xxdb"
         # self._idx_path = datadir_path / f"{db_name}.idx.xxdb"
@@ -46,19 +44,21 @@ class DiskManager:
         # self._f_idx.close()
         self._f_dat.close()
 
-    def new_page(self) -> tuple[bytes, int]:
+    def new_page(self) -> Page:
         pageid = self._next_pageid
         self._next_pageid += 1
-        return b'\x00' * self.config.page_size, pageid
+        page_data = b'\x00' * self.config.page_size
+        return self.Page(page_data, pageid)
 
-    def read_page(self, pageid: int) -> bytes:
+    def read_page(self, pageid: int) -> Page:
         offset = self._calc_offset(pageid)
         self._f_dat.seek(offset)
-        return self._f_dat.read(self.config.page_size)
+        page_data = self._f_dat.read(self.config.page_size)
+        return self.Page(page_data, pageid)
 
-    def write_page(self, pageid: int, page_data: bytes) -> None:
-        self._f_dat.seek(self._calc_offset(pageid))
-        self._f_dat.write(page_data)
+    def write_page(self, page: Page) -> None:
+        self._f_dat.seek(self._calc_offset(page.id))
+        self._f_dat.write(page.dumps_page())
         self._f_dat.flush()
 
     @staticmethod

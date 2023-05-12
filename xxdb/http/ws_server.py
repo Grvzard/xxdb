@@ -1,7 +1,6 @@
 import logging
 from functools import partial
 
-
 from xxdb.engine.db import DB
 from .pb import message_pb2 as pb
 
@@ -23,7 +22,13 @@ async def ws_handler(ws, db: DB):
 
     auth_msg = await ws.receive_bytes()
     auth_req = pb.AuthRequest()
-    auth_req.ParseFromString(auth_msg)
+    try:
+        auth_req.ParseFromString(auth_msg)
+    except Exception as exc:
+        logger.error(f"parse auth request failed: {exc}, (payload): {auth_msg}")
+        await ws.close()
+        return
+
     auth_resp = pb.CommonResponse()
     if auth_check(auth_req.payload):
         auth_resp.status = pb.CommonResponse.Status.OK
@@ -33,12 +38,11 @@ async def ws_handler(ws, db: DB):
         auth_resp.status = pb.CommonResponse.Status.FAILED
         auth_resp.auth_payload = "auth failed"
         await ws.send_bytes(auth_resp.SerializeToString())
+        logger.info(f"auth failed: {auth_req.payload}")
         await ws.close()
         return
 
     async for msg in ws.iter_bytes():
-        # if msg.type == web.WSMsgType.BINARY:
-
         pb_resp = pb.CommonResponse()
         try:
             pb_req = pb.CommonRequest()

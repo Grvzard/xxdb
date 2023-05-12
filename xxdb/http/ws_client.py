@@ -4,28 +4,22 @@ import asyncio
 from aiohttp import ClientSession, WSMsgType
 
 from xxdb.engine.capped_array import CappedArray
-from xxdb.engine.schema import Schema, DbSchema
+from xxdb.engine.schema import Schema, SchemaConfig
 from xxdb.http.pb import message_pb2 as pb
 
 logger = logging.getLogger(__name__)
 
 
-# class Status(int, Enum):
-#     Connected = auto()
-#     Connecting = auto()
-#     Disconnected = auto()
-#     Broken = auto()
-
-
+# TODO: add websocket_pool
 class Client:
     HEARTBEAT_INTERVAL = 30
 
     def __init__(self, dsn: str, dbname: str):
-        ...
         self._dbname = dbname
+        # TODO: use regex to check dsn
         if dsn[-1] != '/':
             dsn += '/'
-        self._dsn = dsn + dbname
+        self._dsn = dsn + "/ws" + dbname
         self._session = None
         self._ws_lock = asyncio.Lock()
         self._ws = None
@@ -48,7 +42,7 @@ class Client:
             pb_resp.ParseFromString(msg)
             if pb_resp.status == pb.CommonResponse.Status.OK:
                 logger.info("auth success")
-                self._schema = Schema(DbSchema.parse_raw(pb_resp.auth_payload))
+                self._schema = Schema(SchemaConfig.parse_raw(pb_resp.auth_payload))
                 self._ws = ws
                 logger.info("client connection opened")
                 self._create_heartbeat_task()
@@ -102,11 +96,17 @@ class Client:
         pb_req.op_key = str(key)
 
         self._idle_cnt = 0
-        # await self._ws_lock.acquire()
-        # self._ws_lock.release()
-        async with self._ws_lock:
-            await ws.send_bytes(pb_req.SerializeToString())
-            msg = await ws.receive()
+        for _ in range(2):
+            try:
+                async with self._ws_lock:
+                    await ws.send_bytes(pb_req.SerializeToString())
+                    msg = await ws.receive()
+                    break
+            except Exception:
+                await self.connect()
+        else:
+            raise Exception("failed to connect to server")
+
         if msg.type == WSMsgType.BINARY:
             pb_resp = pb.CommonResponse()
             pb_resp.ParseFromString(msg.data)

@@ -4,8 +4,14 @@ from pydantic import BaseModel
 from pb_encoding import SupportedType as ColumnType
 
 
-class DiskSettings(BaseModel):
+class PageConfig(BaseModel):
+    size_cost: int
+    id_cost: int
+
+
+class DiskConfig(BaseModel):
     page_size: int = 2048
+    page: PageConfig = PageConfig(size_cost=4, id_cost=8)
 
 
 class IndexSettings(BaseModel):
@@ -13,27 +19,24 @@ class IndexSettings(BaseModel):
     key_size: Literal[4, 8] = 8
 
 
-class DbColumn(BaseModel):
-    num: int
+class ColumnConfig(BaseModel):
     name: str
-    type: ColumnType
+    typ: ColumnType
+    num: int
 
 
-class DbSchema(BaseModel):
-    __root__: list[DbColumn]
-
-    def __iter__(self):
-        return iter(self.__root__)
+class SchemaConfig(BaseModel):
+    columns: list[ColumnConfig]
 
 
 class DbMeta(BaseModel):
-    disk: DiskSettings = DiskSettings()
+    disk: DiskConfig = DiskConfig()
     index: IndexSettings = IndexSettings()
     comment: str = ''
-    data_schema: None | DbSchema = None
+    data_schema: None | SchemaConfig = None
 
 
-class BufferPoolSettings(BaseModel):
+class BufferPoolConfig(BaseModel):
     max_size: int = 128 * 1024 * 1024
     replacer: str = "fifo"
 
@@ -44,5 +47,5 @@ class PrometheusSettings(BaseModel):
 
 class InstanceSettings(BaseModel):
     with_schema: bool = True
-    buffer_pool: BufferPoolSettings = BufferPoolSettings()
+    buffer_pool: BufferPoolConfig = BufferPoolConfig()
     prometheus: PrometheusSettings = PrometheusSettings()

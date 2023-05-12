@@ -1,5 +1,7 @@
 from xxdb.utils.event_emitter import EventEmitter, EventListener
 
+__all__ = ("BufferPoolEventListener", "BufferPoolEventEmitter")
+
 
 class BufferPoolEventListener(EventListener):
     def on_bufferpool_evict(self):
