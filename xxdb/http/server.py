@@ -12,6 +12,8 @@ class Server:
         try:
             self.config = toml.load(Path(config_path).open('r'))
             _app = create_app(AppConfig(**self.config['app']))
+            if "host" not in self.config['server']:
+                self.config['server']['host'] = "0.0.0.0"
             _uvicorn_config = uvicorn.Config(_app, **self.config['server'])
             self._server = uvicorn.Server(_uvicorn_config)
         except Exception as e:
