@@ -9,15 +9,19 @@ requires-python = ">=3.10"
 dependencies = [
     "pydantic >=1.10.0, <2",
     "pb_encoding == 0.2.0",
+    "toml",
+    "prometheus-client",
 ]
 
 [project.optional-dependencies]
-rest = [
+server = [
     "typer",
+    "protobuf",  # ws server requires
     "starlette",  # server requires
-    "httpx",  # client requires
-    "tenacity",  # client requires
-    "aiohttp",  # client requires
+    "uvicorn",  # server requires
+    "httpx",  # rest client requires
+    "tenacity",  # rest client requires
+    "aiohttp",  # ws client requires
 ]
 
 [project.scripts]
