@@ -19,7 +19,7 @@ class Client:
         # TODO: use regex to check dsn
         if dsn[-1] != '/':
             dsn += '/'
-        self._dsn = dsn + "/ws" + dbname
+        self._dsn = dsn + "ws/" + dbname
         self._session = None
         self._ws_lock = asyncio.Lock()
         self._ws = None
