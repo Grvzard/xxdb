@@ -9,6 +9,6 @@ cli = typer.Typer()
 
 
 @cli.command()
-def main(config_path: str = 'xxdb.toml'):
-    server = Server(config_path)
+def main(config: str = 'xxdb.toml'):
+    server = Server(config)
     asyncio.run(server.serve())
