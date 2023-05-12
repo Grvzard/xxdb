@@ -5,11 +5,12 @@ from starlette.applications import Starlette
 from prometheus_client import make_asgi_app
 
 from xxdb.engine.db import DB
-from .config import AppConfig
+from .config import AppConfig as AppConfig
 from .database import DATABASE
 from .ws_server import getEndpoint
+from .rest_server import router as rest_router
 
-__all__ = ("create_app",)
+__all__ = ("create_app", "AppConfig")
 
 
 async def close_db(db: DB):
@@ -40,7 +41,10 @@ def create_app(config: AppConfig) -> Starlette:
         )
         app.add_event_handler("shutdown", partial(asyncio.create_task, close_db(db_instance)))
         assert db_instance.data_schema is not None
-        app.add_websocket_route(f"/ws/{db.name}", getEndpoint(db_instance))
+
+        app.add_websocket_route("/ws", getEndpoint(db_instance))
+        app.mount("/rest", rest_router)
+
         if (reg := db_instance.prom_registry) is not None:
             _metrics_app = make_asgi_app(reg)
             app.mount(f"/metrics/{db.name}", _metrics_app)

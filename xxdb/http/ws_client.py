@@ -124,7 +124,13 @@ class Client:
 
         return None
 
-    async def put(self, key: int, value: dict) -> bool:
+    async def put(
+        self,
+        key: int,
+        value: dict,
+        *,
+        sem: asyncio.Semaphore | None = None,
+    ) -> bool:
         ws = self._ws
         schema = self._schema
         assert ws is not None
@@ -136,11 +142,14 @@ class Client:
         pb_req.put_payload = schema.pack(value)
 
         self._idle_cnt = 0
-        # await self._ws_lock.acquire()
-        # self._ws_lock.release()
+
+        if sem is not None:
+            await sem.acquire()
         async with self._ws_lock:
             await ws.send_bytes(pb_req.SerializeToString())
             msg = await ws.receive()
+        if sem is not None:
+            sem.release()
 
         if msg.type == WSMsgType.BINARY:
             pb_resp = pb.CommonResponse()
