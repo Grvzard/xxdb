@@ -5,13 +5,13 @@ from pb_encoding import SupportedType as ColumnType
 
 
 class PageConfig(BaseModel):
-    size_cost: int
-    id_cost: int
+    size_cost: int = 4  # do not change this
+    id_cost: int = 0  # unused
 
 
 class DiskConfig(BaseModel):
     page_size: int = 2048
-    page: PageConfig = PageConfig(size_cost=4, id_cost=8)
+    page: PageConfig = PageConfig()
 
 
 class IndexSettings(BaseModel):

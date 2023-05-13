@@ -53,4 +53,8 @@ class Page(CappedArray):
     def dumps_page(self) -> bytes:
         _raw_data = super().dumps_data()
         _curr_size = len(_raw_data)
-        return _raw_data + b'\x00' * super().free_size + _curr_size.to_bytes(self.SIZE_COST, "little")
+        try:
+            return _raw_data + b'\x00' * super().free_size + _curr_size.to_bytes(self.SIZE_COST, "little")
+        except Exception as e:
+            print(_curr_size)
+            raise e

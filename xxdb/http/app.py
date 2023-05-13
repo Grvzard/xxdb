@@ -33,18 +33,18 @@ def create_app(config: AppConfig) -> Starlette:
     app = Starlette()
     app.add_route("/ping", ping, methods=["GET"])
 
+    app.mount("/rest", rest_router)
+
     for db in config.databases:
         db_instance = DB(db.name, db.path, db.settings)
         DATABASE[db.name] = db_instance
-        # TODO: move flush_db_periodically to DBInstance
         app.add_event_handler(
             "startup", partial(asyncio.create_task, flush_db_periodically(db_instance, db.flush_period))
         )
         app.add_event_handler("shutdown", partial(asyncio.create_task, close_db(db_instance)))
         assert db_instance.data_schema is not None
 
-        app.add_websocket_route("/ws", getEndpoint(db_instance))
-        app.mount("/rest", rest_router)
+        app.add_websocket_route(f"/ws/{db.name}", getEndpoint(db_instance))
 
         if (reg := db_instance.prom_registry) is not None:
             _metrics_app = make_asgi_app(reg)

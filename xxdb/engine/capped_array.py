@@ -4,7 +4,8 @@ from typing import List
 
 
 class CappedArray:
-    DATA_SIZE_COST = 1
+    # TODO: use varint instead of fixed size
+    DATA_SIZE_COST = 2
 
     def __init__(self, page_data: bytes, capacity: int):
         self._data = bytearray(page_data)

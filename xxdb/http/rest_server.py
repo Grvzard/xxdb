@@ -22,6 +22,7 @@ async def put_data(request):
         await DATABASE[dbname].put(key, value)
         resp = {
             "ok": True,
+            "data": True,
         }
 
     except Exception as e:
@@ -43,7 +44,9 @@ async def get_data(request):
         if dbname not in DATABASE:
             raise Exception(f"db: {dbname} not found")
 
-        resp = {"ok": True, "data": await DATABASE[dbname].get(key, mode="raw")}
+        db = DATABASE[dbname]
+
+        resp = {"ok": True, "data": await db.get(key, mode="dict")}
 
     except Exception as e:
         resp = {
@@ -63,7 +66,7 @@ async def get_schema(request):
 
         schema_config = DATABASE[dbname].data_schema
         assert schema_config is not None
-        resp = {"ok": True, "schema_config_str": schema_config.json()}
+        resp = {"ok": True, "data": schema_config.json()}
 
     except Exception as e:
         resp = {

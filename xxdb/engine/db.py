@@ -85,7 +85,7 @@ class DB:
             async with self._bp_mgr.fetch_page(pageid) as page:
                 page.append(data)
         else:
-            with self._bp_mgr.new_page() as page:
+            async with self._bp_mgr.new_page() as page:
                 self._indices[key] = page.id
                 page.append(data)
 

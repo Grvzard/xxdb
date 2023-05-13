@@ -8,9 +8,27 @@ message AuthRequest {
 }
 
 message CommonRequest {
-    string command = 1;  // required
-    optional string op_key = 2;
-    optional bytes put_payload = 3;
+    enum Command {
+        HEARTBEAT = 0;
+        GET = 3;
+        PUT = 4;
+        BULK_PUT = 5;
+    }
+
+    message GetRequest {
+        string key = 1;
+    }
+
+    message PutRequest {
+        string key = 1;
+        bytes value = 2;
+    }
+
+    Command command = 1;  // required
+    AuthRequest auth_payload = 2;
+    GetRequest get_payload = 3;
+    PutRequest put_payload = 4;
+    repeated PutRequest bulkput_payload = 5;
 }
 
 message CommonResponse {

@@ -17,6 +17,8 @@ class PrometheusClient(BufferPoolEventListener):
         self._bufferpool_evict_cnt = Counter_("bufferpool_evict", "")
         self._bufferpool_size = Gauge_("bufferpool_size", "")
         self._bufferpool_size.set_function(lambda: len(bp_mgr.pool))
+        self._bufferpool_dirtys_cnt = Gauge_("bufferpool_dirtys_cnt", "")
+        self._bufferpool_dirtys_cnt.set_function(lambda: len(bp_mgr.dirty_pageids))
         self._bufferpool_flush_cnt = Counter_("bufferpool_flush_cnt", "")
 
     @property

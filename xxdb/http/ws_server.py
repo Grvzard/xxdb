@@ -43,27 +43,45 @@ async def ws_handler(ws, db: DB):
         return
 
     async for msg in ws.iter_bytes():
-        pb_resp = pb.CommonResponse()
         try:
             pb_req = pb.CommonRequest()
             pb_req.ParseFromString(msg)
+
         except Exception as exc:
             logger.error(f"parse request failed: {exc}, (payload): {msg}")
+            pb_resp = pb.CommonResponse()
             pb_resp.status = pb.CommonResponse.Status.ERROR
             pb_resp.error_payload = "parse request failed"
+
         else:
-            if pb_req.command == "put":
-                key = int(pb_req.op_key)
-                await db.put(key, pb_req.put_payload)
-                pb_resp.status = pb.CommonResponse.Status.OK
-            elif pb_req.command == "get":
-                data = await db.get(int(pb_req.op_key), mode="raw")
-                pb_resp.status = pb.CommonResponse.Status.OK
-                pb_resp.get_payload = data
-            elif pb_req.command == "_heartbeat":
-                pb_resp.status = pb.CommonResponse.Status.OK
-            else:
-                pb_resp.status = pb.CommonResponse.Status.FAILED
-                pb_resp.error_payload = "unknown command"
+            pb_resp = await _process_cmd(pb_req, db)
 
         await ws.send_bytes(pb_resp.SerializeToString())
+
+
+async def _process_cmd(pb_req, db) -> pb.CommonResponse:
+    pb_resp = pb.CommonResponse()
+
+    if pb_req.command == pb_req.Command.PUT:
+        key = int(pb_req.put_payload.key)
+        await db.put(key, pb_req.put_payload.value)
+        pb_resp.status = pb.CommonResponse.Status.OK
+
+    if pb_req.command == pb_req.Command.BULK_PUT:
+        for put_payload in pb_req.bulkput_payload:
+            key = int(put_payload.key)
+            await db.put(key, put_payload.value)
+
+    elif pb_req.command == pb_req.Command.GET:
+        data = await db.get(int(pb_req.op_key), mode="raw")
+        pb_resp.status = pb.CommonResponse.Status.OK
+        pb_resp.get_payload = data
+
+    elif pb_req.command == pb_req.Command.HEARTBEAT:
+        pb_resp.status = pb.CommonResponse.Status.OK
+
+    else:
+        pb_resp.status = pb.CommonResponse.Status.FAILED
+        pb_resp.error_payload = "unknown command"
+
+    return pb_resp
