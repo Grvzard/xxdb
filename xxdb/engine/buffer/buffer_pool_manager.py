@@ -1,5 +1,5 @@
 import logging
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 
 from xxdb.engine.config import BufferPoolConfig as BufferPoolConfig
 from xxdb.engine.disk import DiskManager
@@ -23,8 +23,11 @@ class BufferPoolManager(BufferPoolEventEmitter):
         self.dirty_pageids: set[int] = set()
         self._max_page_amount = self.config.max_size // self.disk_mgr.config.page_size
 
-    @contextmanager
-    def new_page(self):
+    @asynccontextmanager
+    async def new_page(self):
+        if len(self.pool) >= self._max_page_amount:
+            if not await self.try_evict():
+                raise Exception()
         page = self.disk_mgr.new_page()
         self.pool[page.id] = page
 
