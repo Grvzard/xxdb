@@ -46,7 +46,7 @@ class BufferPoolManager(BufferPoolEventEmitter):
             if len(self.pool) >= self._max_page_amount and not await self.try_evict():
                 raise Exception()
 
-            page = self.disk_mgr.read_page(pageid)
+            page = await self.disk_mgr.read_page(pageid)
             self.pool[pageid] = page
         else:
             page = self.pool[pageid]
@@ -67,23 +67,23 @@ class BufferPoolManager(BufferPoolEventEmitter):
                 break
             pageid = self.dirty_pageids.pop()
             # with page_lock(pageid):
-            self.flush_page(self.pool[pageid])
+            await self.flush_page(self.pool[pageid])
             flush_cnt += 1
 
         logger.info(f"buffer pool flushed {flush_cnt} pages")
         await self._emit("bufferpool_flush_all", flush_cnt)
 
-    def flush_page(self, page: Page) -> None:
+    async def flush_page(self, page: Page) -> None:
         if page.is_dirty:
             logger.debug(f"flush dirty page: {page.id}")
-            self.disk_mgr.write_page(page)
+            await self.disk_mgr.write_page(page)
             page.is_dirty = False
             self.dirty_pageids.discard(page.id)
 
     async def try_evict(self) -> bool:
         if pageid_evicted := self.replacer.evict(self.pool):
             page = self.pool.pop(pageid_evicted)
-            self.flush_page(page)
+            await self.flush_page(page)
             logger.debug(f"evict page: {pageid_evicted}")
             await self._emit("bufferpool_evict")
             return True

@@ -1,5 +1,6 @@
 # Referenced by: DB
 from pathlib import Path
+import asyncio
 
 from xxdb.engine.page import Page, PageFactory
 from xxdb.engine.config import DiskConfig as DiskConfig
@@ -50,15 +51,19 @@ class DiskManager:
         page_data = b'\x00' * self.config.page_size
         return self.Page(page_data, pageid)
 
-    def read_page(self, pageid: int) -> Page:
+    async def read_page(self, pageid: int) -> Page:
         offset = self._calc_offset(pageid)
         self._f_dat.seek(offset)
-        page_data = self._f_dat.read(self.config.page_size)
+        loop = asyncio.get_running_loop()
+        page_data = await loop.run_in_executor(None, self._f_dat.read, self.config.page_size)
+        # page_data = self._f_dat.read(self.config.page_size)
         return self.Page(page_data, pageid)
 
-    def write_page(self, page: Page) -> None:
+    async def write_page(self, page: Page) -> None:
         self._f_dat.seek(self._calc_offset(page.id))
-        self._f_dat.write(page.dumps_page())
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, self._f_dat.write, page.dumps_page())
+        # self._f_dat.write(page.dumps_page())
         self._f_dat.flush()
 
     @staticmethod
