@@ -3,6 +3,8 @@ import asyncio
 
 from starlette.applications import Starlette
 from starlette.responses import Response
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 
 from xxdb.engine.db import DB
@@ -31,6 +33,10 @@ async def ping(request):
 
 def create_app(config: AppConfig) -> Starlette:
     app = Starlette()
+
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=config.allowed_hosts)
+    app.add_middleware(CORSMiddleware, allow_origins=config.cors_origins)
+
     app.add_route("/ping", ping, methods=["GET"])
 
     app.mount("/rest", rest_router)
