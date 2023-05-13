@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x04xxdb\".\n\x0b\x41uthRequest\x12\x0e\n\x06\x64\x62name\x18\x01 \x01(\t\x12\x0f\n\x07payload\x18\x02 \x01(\t\"j\n\rCommonRequest\x12\x0f\n\x07\x63ommand\x18\x01 \x01(\t\x12\x13\n\x06op_key\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x18\n\x0bput_payload\x18\x03 \x01(\x0cH\x01\x88\x01\x01\x42\t\n\x07_op_keyB\x0e\n\x0c_put_payload\"\xa8\x01\n\x0e\x43ommonResponse\x12+\n\x06status\x18\x01 \x01(\x0e\x32\x1b.xxdb.CommonResponse.Status\x12\x14\n\x0c\x61uth_payload\x18\x02 \x01(\t\x12\x15\n\rerror_payload\x18\x03 \x01(\t\x12\x13\n\x0bget_payload\x18\x04 \x01(\x0c\"\'\n\x06Status\x12\x06\n\x02OK\x10\x00\x12\n\n\x06\x46\x41ILED\x10\x01\x12\t\n\x05\x45RROR\x10\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x04xxdb\".\n\x0b\x41uthRequest\x12\x0e\n\x06\x64\x62name\x18\x01 \x01(\t\x12\x0f\n\x07payload\x18\x02 \x01(\t\"\x88\x03\n\rCommonRequest\x12,\n\x07\x63ommand\x18\x01 \x01(\x0e\x32\x1b.xxdb.CommonRequest.Command\x12\'\n\x0c\x61uth_payload\x18\x02 \x01(\x0b\x32\x11.xxdb.AuthRequest\x12\x33\n\x0bget_payload\x18\x03 \x01(\x0b\x32\x1e.xxdb.CommonRequest.GetRequest\x12\x33\n\x0bput_payload\x18\x04 \x01(\x0b\x32\x1e.xxdb.CommonRequest.PutRequest\x12\x37\n\x0f\x62ulkput_payload\x18\x05 \x03(\x0b\x32\x1e.xxdb.CommonRequest.PutRequest\x1a\x19\n\nGetRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x1a(\n\nPutRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\"8\n\x07\x43ommand\x12\r\n\tHEARTBEAT\x10\x00\x12\x07\n\x03GET\x10\x03\x12\x07\n\x03PUT\x10\x04\x12\x0c\n\x08\x42ULK_PUT\x10\x05\"\xa8\x01\n\x0e\x43ommonResponse\x12+\n\x06status\x18\x01 \x01(\x0e\x32\x1b.xxdb.CommonResponse.Status\x12\x14\n\x0c\x61uth_payload\x18\x02 \x01(\t\x12\x15\n\rerror_payload\x18\x03 \x01(\t\x12\x13\n\x0bget_payload\x18\x04 \x01(\x0c\"\'\n\x06Status\x12\x06\n\x02OK\x10\x00\x12\n\n\x06\x46\x41ILED\x10\x01\x12\t\n\x05\x45RROR\x10\x02\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -23,10 +23,16 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _globals['_AUTHREQUEST']._serialized_start=23
   _globals['_AUTHREQUEST']._serialized_end=69
-  _globals['_COMMONREQUEST']._serialized_start=71
-  _globals['_COMMONREQUEST']._serialized_end=177
-  _globals['_COMMONRESPONSE']._serialized_start=180
-  _globals['_COMMONRESPONSE']._serialized_end=348
-  _globals['_COMMONRESPONSE_STATUS']._serialized_start=309
-  _globals['_COMMONRESPONSE_STATUS']._serialized_end=348
+  _globals['_COMMONREQUEST']._serialized_start=72
+  _globals['_COMMONREQUEST']._serialized_end=464
+  _globals['_COMMONREQUEST_GETREQUEST']._serialized_start=339
+  _globals['_COMMONREQUEST_GETREQUEST']._serialized_end=364
+  _globals['_COMMONREQUEST_PUTREQUEST']._serialized_start=366
+  _globals['_COMMONREQUEST_PUTREQUEST']._serialized_end=406
+  _globals['_COMMONREQUEST_COMMAND']._serialized_start=408
+  _globals['_COMMONREQUEST_COMMAND']._serialized_end=464
+  _globals['_COMMONRESPONSE']._serialized_start=467
+  _globals['_COMMONRESPONSE']._serialized_end=635
+  _globals['_COMMONRESPONSE_STATUS']._serialized_start=596
+  _globals['_COMMONRESPONSE_STATUS']._serialized_end=635
 # @@protoc_insertion_point(module_scope)

@@ -1,7 +1,7 @@
 import logging
 import asyncio
 
-from aiohttp import ClientSession, WSMsgType
+from aiohttp import ClientSession
 
 from xxdb.engine.capped_array import CappedArray
 from xxdb.engine.schema import Schema, SchemaConfig
@@ -57,7 +57,7 @@ class Client:
 
     async def _send_heartbeat(self) -> None:
         pb_req = pb.CommonRequest()
-        pb_req.command = "_heartbeat"
+        pb_req.command = pb.CommonRequest.Command.HEARTBEAT
         payload = pb_req.SerializeToString()
 
         while True:
@@ -83,83 +83,84 @@ class Client:
             await self._session.close()
             self._session = None
         self._schema = None
-        logger.info("client connection closed")
+        logger.info("xxdb ws_client connection closed")
 
-    async def get(self, key: int) -> list[dict] | None:
+    async def _common_request(self, pb_req: pb.CommonRequest) -> pb.CommonResponse:
         ws = self._ws
-        schema = self._schema
-        assert schema is not None
         assert ws is not None
 
-        pb_req = pb.CommonRequest()
-        pb_req.command = "get"
-        pb_req.op_key = str(key)
+        payload = pb_req.SerializeToString()
 
         self._idle_cnt = 0
         for _ in range(2):
             try:
                 async with self._ws_lock:
-                    await ws.send_bytes(pb_req.SerializeToString())
-                    msg = await ws.receive()
+                    await ws.send_bytes(payload)
+                    msg = await ws.receive_bytes()
                     break
             except Exception:
                 await self.connect()
         else:
             raise Exception("failed to connect to server")
 
-        if msg.type == WSMsgType.BINARY:
-            pb_resp = pb.CommonResponse()
-            pb_resp.ParseFromString(msg.data)
-            if pb_resp.status == pb.CommonResponse.Status.OK:
-                data_list = [schema.unpack(data) for data in CappedArray.RetrieveFromRaw(pb_resp.get_payload)]
-                return data_list
-            else:
-                logger.debug(pb_resp.status)
-                logger.debug(pb_resp.error_payload)
-                return None
+        pb_resp = pb.CommonResponse()
+        pb_resp.ParseFromString(msg)
+        return pb_resp
 
-        elif msg.type == WSMsgType.ERROR:
-            logger.error('ws connection closed with exception %s' % ws.exception())
-            await self.close()
+    async def get(self, key: int) -> list[dict] | None:
+        schema = self._schema
+        assert schema is not None
 
-        return None
+        pb_req = pb.CommonRequest()
+        pb_req.command = pb.CommonRequest.Command.GET
+        pb_req.op_key = str(key)
+
+        pb_resp = await self._common_request(pb_req)
+
+        if pb_resp.status == pb.CommonResponse.Status.OK:
+            data_list = [schema.unpack(data) for data in CappedArray.RetrieveFromRaw(pb_resp.get_payload)]
+            return data_list
+        else:
+            logger.debug(pb_resp.status)
+            logger.debug(pb_resp.error_payload)
+            return None
 
     async def put(
         self,
         key: int,
         value: dict,
-        *,
-        sem: asyncio.Semaphore | None = None,
+        # *,
+        # sem: asyncio.Semaphore | None = None,
     ) -> bool:
-        ws = self._ws
         schema = self._schema
-        assert ws is not None
         assert schema is not None
 
         pb_req = pb.CommonRequest()
-        pb_req.command = "put"
+        pb_req.command = pb.CommonRequest.Command.PUT
         pb_req.op_key = str(key)
         pb_req.put_payload = schema.pack(value)
 
-        self._idle_cnt = 0
+        pb_resp = await self._common_request(pb_req)
 
-        if sem is not None:
-            await sem.acquire()
-        async with self._ws_lock:
-            await ws.send_bytes(pb_req.SerializeToString())
-            msg = await ws.receive()
-        if sem is not None:
-            sem.release()
+        if pb_resp.status == pb.CommonResponse.Status.OK:
+            return True
+        else:
+            raise Exception(pb_resp.error_payload)
 
-        if msg.type == WSMsgType.BINARY:
-            pb_resp = pb.CommonResponse()
-            pb_resp.ParseFromString(msg.data)
-            if pb_resp.status == pb.CommonResponse.Status.OK:
-                return True
-            else:
-                raise Exception(pb_resp.error_payload)
+    async def bulk_put(self, kv_list: list[tuple[int, dict]]):
+        schema = self._schema
+        assert schema is not None
 
-        elif msg.type == WSMsgType.ERROR:
-            print('ws connection closed with exception %s' % ws.exception())
+        pb_req = pb.CommonRequest()
+        pb_req.command = pb.CommonRequest.Command.BULK_PUT
+        for k, v in kv_list:
+            put_payload = pb_req.bulkput_payload.add()
+            put_payload.key = str(k)
+            put_payload.value = schema.pack(v)
 
-        return False
+        pb_resp = await self._common_request(pb_req)
+
+        if pb_resp.status == pb.CommonResponse.Status.OK:
+            return True
+        else:
+            raise Exception(pb_resp.error_payload)
