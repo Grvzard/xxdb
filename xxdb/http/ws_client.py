@@ -25,6 +25,7 @@ class Client:
         self._ws = None
         self._schema = None
         self._idle_cnt = 0
+        self._heartbeat_task = None
 
     async def connect(self):
         await self.close()

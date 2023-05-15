@@ -16,7 +16,8 @@ dependencies = [
 [project.optional-dependencies]
 server = [
     "typer",
-    "protobuf",  # ws server requires
+    "protobuf",  # http requires
+    "websockets",  # ws server requires
     "starlette",  # server requires
     "uvicorn",  # server requires
     "httpx",  # rest client requires
