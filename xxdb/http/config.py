@@ -12,4 +12,5 @@ class DbSettings(BaseModel):
 
 class AppConfig(BaseModel):
     databases: list[DbSettings]
-    cors_origins: list[str] = []
+    cors_origins: list[str] = ["*"]
+    allowed_hosts: list[str] = ["*"]

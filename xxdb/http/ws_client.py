@@ -25,6 +25,7 @@ class Client:
         self._ws = None
         self._schema = None
         self._idle_cnt = 0
+        self._heartbeat_task = None
 
     async def connect(self):
         await self.close()
@@ -61,21 +62,27 @@ class Client:
         payload = pb_req.SerializeToString()
 
         while True:
-            assert self._ws is not None
-            if self._idle_cnt >= self.HEARTBEAT_INTERVAL:
-                async with self._ws_lock:
-                    try:
+            try:
+                if self._idle_cnt >= self.HEARTBEAT_INTERVAL:
+                    assert self._ws is not None
+                    async with self._ws_lock:
                         await self._ws.send_bytes(payload)
                         await self._ws.receive_bytes()
-                    except Exception as exc:
-                        logger.error(f'Failed to send heartbeat due to: {exc!r}')
-                    else:
-                        self._idle_cnt = 0
-                        logger.debug("sent heartbeat")
-            await asyncio.sleep(1)
-            self._idle_cnt += 1
+                await asyncio.sleep(1)
+                self._idle_cnt += 1
+            except asyncio.CancelledError:
+                logger.error("heartbeat task cancelled")
+                break
+            except Exception as exc:
+                logger.error(f'Failed to send heartbeat due to: {exc!r}')
+            else:
+                self._idle_cnt = 0
+                logger.debug("sent heartbeat")
 
     async def close(self):
+        if self._heartbeat_task:
+            self._heartbeat_task.cancel()
+            await self._heartbeat_task
         if self._ws is not None:
             await self._ws.close()
             self._ws = None
@@ -99,6 +106,7 @@ class Client:
                     msg = await ws.receive_bytes()
                     break
             except Exception:
+                logger.error("failed to send request, try to reconnect")
                 await self.connect()
         else:
             raise Exception("failed to connect to server")
