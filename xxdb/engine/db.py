@@ -7,7 +7,7 @@ from xxdb.engine.disk import DiskManager
 from xxdb.engine.metrics import PrometheusClient
 from xxdb.engine.hashtable import HashTable
 from xxdb.engine.config import InstanceSettings, DbMeta
-from xxdb.engine.schema import Schema, SchemaConfig
+from xxdb.engine.schema import Schema, SchemasConfig
 
 __all__ = ("DB", "create", "InstanceSettings", "DbMeta")
 
@@ -32,8 +32,8 @@ class DB:
 
         self._meta = DbMeta.parse_raw(DiskManager.read_meta(dat_path.open("rb")))
         self._schema = None
-        if self._meta.data_schema and self._config.with_schema:
-            self._schema = Schema(self._meta.data_schema)
+        if self._meta.schemas and self._config.with_schema:
+            self._schema = Schema(self._meta.schemas)
 
         self._disk_mgr = DiskManager(datadir, self._name, self._meta.disk)
         self._bp_mgr = BufferPoolManager(self._disk_mgr, self._config.buffer_pool)
@@ -45,8 +45,8 @@ class DB:
             self._prom_client = PrometheusClient(self._bp_mgr, self._name)
 
     @property
-    def data_schema(self) -> None | SchemaConfig:
-        return self._meta.data_schema
+    def data_schemas(self) -> None | SchemasConfig:
+        return self._meta.schemas
 
     async def close(self):
         await self.flush()
@@ -74,11 +74,13 @@ class DB:
 
         raise Exception()
 
-    async def put(self, key, data: bytes | dict) -> None:
+    async def put(self, key, data: bytes | dict, *, schema: str = '') -> None:
         if isinstance(data, dict):
             if not self._schema:
                 raise Exception("db does not have a schema")
-            data = self._schema.pack(data)
+            elif schema == '':
+                raise Exception("schema(name) is required for multi schema db")
+            data = self._schema.pack(data, schema=schema)
 
         pageid = self._indices[key]
         if pageid is not None:
@@ -110,14 +112,18 @@ def create(
     exists_ok: bool = True,
 ) -> bool:
     datadir_path = Path(datadir)
-    if not (datadir_path.exists() and datadir_path.is_dir()):
-        raise Exception(f"datadir: {datadir} isn't exists or is not a directory")
+    if datadir_path.exists():
+        if not datadir_path.is_dir():
+            raise Exception(f"datadir: {datadir} is not a directory")
+    else:
+        datadir_path.mkdir(777)
+        logger.info(f"created datadir: {datadir}")
 
     dat_path = datadir_path / f"{name}.dat.xxdb"
 
     if dat_path.exists():
         if not exists_ok:
-            raise Exception()
+            raise Exception("dat file already exists")
         return False
 
     DiskManager.write_meta(dat_path.open("wb"), meta.json().encode())

@@ -64,9 +64,9 @@ async def get_schema(request):
         if dbname not in DATABASE:
             raise Exception(f"db: {dbname} not found")
 
-        schema_config = DATABASE[dbname].data_schema
-        assert schema_config is not None
-        resp = {"ok": True, "data": schema_config.json()}
+        data_schemas = DATABASE[dbname].data_schemas
+        assert data_schemas is not None
+        resp = {"ok": True, "data": data_schemas.json()}
 
     except Exception as e:
         resp = {
@@ -78,9 +78,9 @@ async def get_schema(request):
 
 
 rest_routes = [
-    Route("/data/{dbname:str}/{key:int}", put_data, methods=["PUT"]),
-    Route("/data/{dbname:str}/{key:int}", get_data, methods=["GET"]),
-    Route("/schema/{dbname:str}", get_schema, methods=["GET"]),
+    Route("/{dbname:str}/data/{key:int}", put_data, methods=["PUT"]),
+    Route("/{dbname:str}/data/{key:int}", get_data, methods=["GET"]),
+    Route("/{dbname:str}/schema", get_schema, methods=["GET"]),
 ]
 
 router = Router(rest_routes)

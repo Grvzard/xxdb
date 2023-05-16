@@ -8,7 +8,7 @@ dynamic = ["version"]
 requires-python = ">=3.10"
 dependencies = [
     "pydantic >=1.10.0, <2",
-    "pb_encoding == 0.2.0",
+    "pb_encoding == 0.4.0",
     "toml",
     "prometheus-client",
 ]
@@ -19,14 +19,14 @@ server = [
     "protobuf",  # http requires
     "websockets",  # ws server requires
     "starlette",  # server requires
-    "uvicorn",  # server requires
+    "uvicorn[standard]",  # server requires
     "httpx",  # rest client requires
     "tenacity",  # rest client requires
     "aiohttp",  # ws client requires
 ]
 
 [project.scripts]
-xxdb = "xxdb.http.cli:cli"
+xxdb = "xxdb.cli:cli"
 
 [tool.hatch.version]
 path = "xxdb/__init__.py"

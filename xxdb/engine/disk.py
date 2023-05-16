@@ -1,6 +1,7 @@
 # Referenced by: DB
 from pathlib import Path
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from xxdb.engine.page import Page, PageFactory
 from xxdb.engine.config import DiskConfig as DiskConfig
@@ -19,6 +20,7 @@ class DiskManager:
         self.config = config
 
         self.Page = PageFactory(self.config.page)
+        self._th_executor = ThreadPoolExecutor()
 
         self._dat_path = datadir_path / f"{db_name}.dat.xxdb"
         # self._idx_path = datadir_path / f"{db_name}.idx.xxdb"
@@ -55,15 +57,18 @@ class DiskManager:
         offset = self._calc_offset(pageid)
         self._f_dat.seek(offset)
         loop = asyncio.get_running_loop()
-        page_data = await loop.run_in_executor(None, self._f_dat.read, self.config.page_size)
+        page_data = await loop.run_in_executor(self._th_executor, self._f_dat.read, self.config.page_size)
         # page_data = self._f_dat.read(self.config.page_size)
         return self.Page(page_data, pageid)
 
     async def write_page(self, page: Page) -> None:
         self._f_dat.seek(self._calc_offset(page.id))
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, self._f_dat.write, page.dumps_page())
+        await loop.run_in_executor(self._th_executor, self._f_dat.write, page.dumps_page())
         # self._f_dat.write(page.dumps_page())
+        # self._f_dat.flush()
+
+    def flush(self):
         self._f_dat.flush()
 
     @staticmethod
