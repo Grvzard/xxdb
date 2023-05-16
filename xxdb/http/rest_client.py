@@ -3,7 +3,6 @@ from typing import Literal
 from tenacity import retry, stop_after_attempt
 import httpx
 
-from xxdb.engine.capped_array import CappedArray
 from xxdb.engine.schema import Schema, SchemasConfig
 
 
@@ -39,7 +38,7 @@ class Client:
 
         data = await self._common_request("get", f"/data/{key}")
 
-        return [self._schema.unpack(_) for _ in CappedArray.RetrieveFromRaw(data)]
+        return data
 
     async def put(self, key: int, value: dict, *, schema: str) -> Literal[True]:
         assert self._schema is not None

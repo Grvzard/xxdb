@@ -12,8 +12,15 @@ cli = typer.Typer()
 
 @cli.command()
 def serve(config: str = 'xxdb.toml'):
+    # import cProfile
+    # pr = cProfile.Profile()
+    # pr.enable()
+
     server = Server(config)
     asyncio.run(server.serve())
+
+    # pr.disable()
+    # pr.dump_stats('xxdb.prof')
 
 
 @cli.command()

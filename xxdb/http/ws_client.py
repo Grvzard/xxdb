@@ -1,5 +1,6 @@
 import logging
 import asyncio
+from contextlib import suppress
 
 from aiohttp import ClientSession
 
@@ -28,7 +29,8 @@ class Client:
         self._heartbeat_task = None
 
     async def connect(self):
-        await self.close()
+        if self._ws is not None:
+            await self._ws.close()
         if self._session is None:
             self._session = ClientSession()
 
@@ -52,6 +54,15 @@ class Client:
 
         except Exception as exc:
             logger.error(exc)
+
+    async def _reconnect(self):
+        if self._ws is not None:
+            await self._ws.close()
+        assert self._session is not None
+        ws = await self._session.ws_connect(self._dsn)
+        async with self._ws_lock:
+            self._ws = ws
+            self._idle_cnt = 0
 
     def _create_heartbeat_task(self):
         self._heartbeat_task = asyncio.create_task(self._send_heartbeat())
@@ -82,7 +93,8 @@ class Client:
     async def close(self):
         if self._heartbeat_task:
             self._heartbeat_task.cancel()
-            await self._heartbeat_task
+            with suppress(asyncio.CancelledError):
+                await self._heartbeat_task
         if self._ws is not None:
             await self._ws.close()
             self._ws = None
@@ -105,9 +117,10 @@ class Client:
                     await ws.send_bytes(payload)
                     msg = await ws.receive_bytes()
                     break
-            except Exception:
-                logger.error("failed to send request, try to reconnect")
-                await self.connect()
+            except Exception as exc:
+                logger.error(f"failed to send request: {exc}")
+                logger.error("try to reconnect")
+                await self._reconnect()
         else:
             raise Exception("failed to connect to server")
 

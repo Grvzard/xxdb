@@ -15,6 +15,10 @@ SchemaColumn = namedtuple("SchemaColumn", ["name", "encode", "decode"])
 # TODO: add validation for schemas
 class Schema:
     def __init__(self, schemas: SchemasConfig) -> None:
+        # make sure no duplicate schema code
+        _validate = len(schemas) == len({s.code for s in schemas})
+        if _validate is False:
+            raise Exception("duplicate schema code")
         self._schema_code_map = {s.name: s.code for s in schemas}
         self._schema_name_map = {s.code: s.name for s in schemas}
         self._cols: dict[int, list[SchemaColumn]] = {}

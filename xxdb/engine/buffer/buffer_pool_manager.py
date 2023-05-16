@@ -70,6 +70,7 @@ class BufferPoolManager(BufferPoolEventEmitter):
             await self.flush_page(self.pool[pageid])
             flush_cnt += 1
 
+        self.disk_mgr.flush()
         logger.info(f"buffer pool flushed {flush_cnt} pages")
         await self._emit("bufferpool_flush_all", flush_cnt)
 
