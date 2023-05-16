@@ -26,7 +26,7 @@ server = [
 ]
 
 [project.scripts]
-xxdb = "xxdb.http.cli:cli"
+xxdb = "xxdb.cli:cli"
 
 [tool.hatch.version]
 path = "xxdb/__init__.py"

@@ -112,14 +112,18 @@ def create(
     exists_ok: bool = True,
 ) -> bool:
     datadir_path = Path(datadir)
-    if not (datadir_path.exists() and datadir_path.is_dir()):
-        raise Exception(f"datadir: {datadir} isn't exists or is not a directory")
+    if datadir_path.exists():
+        if not datadir_path.is_dir():
+            raise Exception(f"datadir: {datadir} is not a directory")
+    else:
+        datadir_path.mkdir(777)
+        logger.info(f"created datadir: {datadir}")
 
     dat_path = datadir_path / f"{name}.dat.xxdb"
 
     if dat_path.exists():
         if not exists_ok:
-            raise Exception()
+            raise Exception("dat file already exists")
         return False
 
     DiskManager.write_meta(dat_path.open("wb"), meta.json().encode())
