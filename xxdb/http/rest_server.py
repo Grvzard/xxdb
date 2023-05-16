@@ -64,9 +64,9 @@ async def get_schema(request):
         if dbname not in DATABASE:
             raise Exception(f"db: {dbname} not found")
 
-        schema_config = DATABASE[dbname].data_schema
-        assert schema_config is not None
-        resp = {"ok": True, "data": schema_config.json()}
+        data_schemas = DATABASE[dbname].data_schemas
+        assert data_schemas is not None
+        resp = {"ok": True, "data": data_schemas.json()}
 
     except Exception as e:
         resp = {

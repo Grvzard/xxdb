@@ -4,7 +4,7 @@ import asyncio
 from aiohttp import ClientSession
 
 from xxdb.engine.capped_array import CappedArray
-from xxdb.engine.schema import Schema, SchemaConfig
+from xxdb.engine.schema import Schema, SchemasConfig
 from xxdb.http.pb import message_pb2 as pb
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class Client:
         self._session = None
         self._ws_lock = asyncio.Lock()
         self._ws = None
-        self._schema = None
+        self._schema: None | Schema = None
         self._idle_cnt = 0
         self._heartbeat_task = None
 
@@ -43,7 +43,7 @@ class Client:
             pb_resp.ParseFromString(msg)
             if pb_resp.status == pb.CommonResponse.Status.OK:
                 logger.info("auth success")
-                self._schema = Schema(SchemaConfig.parse_raw(pb_resp.auth_payload))
+                self._schema = Schema(SchemasConfig.parse_raw(pb_resp.auth_payload))
                 self._ws = ws
                 logger.info("client connection opened")
                 self._create_heartbeat_task()
@@ -116,8 +116,7 @@ class Client:
         return pb_resp
 
     async def get(self, key: int) -> list[dict] | None:
-        schema = self._schema
-        assert schema is not None
+        assert self._schema is not None
 
         pb_req = pb.CommonRequest()
         pb_req.command = pb.CommonRequest.Command.GET
@@ -126,7 +125,7 @@ class Client:
         pb_resp = await self._common_request(pb_req)
 
         if pb_resp.status == pb.CommonResponse.Status.OK:
-            data_list = [schema.unpack(data) for data in CappedArray.RetrieveFromRaw(pb_resp.get_payload)]
+            data_list = [self._schema.unpack(data) for data in CappedArray.RetrieveFromRaw(pb_resp.get_payload)]
             return data_list
         else:
             logger.debug(pb_resp.status)
@@ -137,16 +136,14 @@ class Client:
         self,
         key: int,
         value: dict,
-        # *,
-        # sem: asyncio.Semaphore | None = None,
+        *,
+        schema: str,
     ) -> bool:
-        schema = self._schema
-        assert schema is not None
-
         pb_req = pb.CommonRequest()
         pb_req.command = pb.CommonRequest.Command.PUT
         pb_req.op_key = str(key)
-        pb_req.put_payload = schema.pack(value)
+        assert self._schema is not None
+        pb_req.put_payload = self._schema.pack(value, schema=schema)
 
         pb_resp = await self._common_request(pb_req)
 
@@ -155,16 +152,14 @@ class Client:
         else:
             raise Exception(pb_resp.error_payload)
 
-    async def bulk_put(self, kv_list: list[tuple[int, dict]]):
-        schema = self._schema
-        assert schema is not None
-
+    async def bulk_put(self, kv_list: list[tuple[int, dict]], *, schema: str):
+        assert self._schema is not None
         pb_req = pb.CommonRequest()
         pb_req.command = pb.CommonRequest.Command.BULK_PUT
         for k, v in kv_list:
             put_payload = pb_req.bulkput_payload.add()
             put_payload.key = str(k)
-            put_payload.value = schema.pack(v)
+            put_payload.value = self._schema.pack(v, schema=schema)
 
         pb_resp = await self._common_request(pb_req)
 

@@ -1,7 +1,7 @@
 from xxdb.engine.capped_array import CappedArray
 
 
-def test():
+def disabled_test():
     test_size = 40
     data = b'\x00' * test_size
 

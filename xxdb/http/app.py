@@ -48,7 +48,7 @@ def create_app(config: AppConfig) -> Starlette:
             "startup", partial(asyncio.create_task, flush_db_periodically(db_instance, db.flush_period))
         )
         app.add_event_handler("shutdown", partial(asyncio.create_task, close_db(db_instance)))
-        assert db_instance.data_schema is not None
+        assert db_instance.data_schemas is not None
 
         app.add_websocket_route(f"/ws/{db.name}", getEndpoint(db_instance))
 

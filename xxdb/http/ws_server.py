@@ -16,8 +16,8 @@ def getEndpoint(db: DB):
 
 
 async def ws_handler(ws, db: DB):
-    schema = db._meta.data_schema
-    assert schema is not None
+    data_schemas = db.data_schemas
+    assert data_schemas is not None
     await ws.accept()
 
     auth_msg = await ws.receive_bytes()
@@ -32,7 +32,7 @@ async def ws_handler(ws, db: DB):
     auth_resp = pb.CommonResponse()
     if auth_check(auth_req.payload):
         auth_resp.status = pb.CommonResponse.Status.OK
-        auth_resp.auth_payload = schema.json()
+        auth_resp.auth_payload = data_schemas.json()
         await ws.send_bytes(auth_resp.SerializeToString())
     else:
         auth_resp.status = pb.CommonResponse.Status.FAILED

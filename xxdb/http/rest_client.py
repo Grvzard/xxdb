@@ -4,7 +4,7 @@ from tenacity import retry, stop_after_attempt
 import httpx
 
 from xxdb.engine.capped_array import CappedArray
-from xxdb.engine.schema import Schema, SchemaConfig
+from xxdb.engine.schema import Schema, SchemasConfig
 
 
 class Client:
@@ -27,8 +27,8 @@ class Client:
         return r['data']
 
     async def connect(self):
-        schema_config_str = await self._common_request("get", f"/schema/{self.dbname}")
-        self._schema = Schema(SchemaConfig.parse_raw(schema_config_str))
+        schemas_str = await self._common_request("get", f"/schema/{self.dbname}")
+        self._schema = Schema(SchemasConfig.parse_raw(schemas_str))
 
     async def close(self) -> None:
         await self._http_client.aclose()
@@ -42,14 +42,14 @@ class Client:
 
         return [self._schema.unpack(_) for _ in CappedArray.RetrieveFromRaw(data)]
 
-    async def put(self, key: int, value: dict) -> Literal[True]:
+    async def put(self, key: int, value: dict, *, schema: str) -> Literal[True]:
         assert self._schema is not None
         db = self.dbname
 
         ok = await self._common_request(
             "put",
             f"/data/{db}/{key}",
-            content=self._schema.pack(value),
+            content=self._schema.pack(value, schema=schema),
         )
 
         return ok

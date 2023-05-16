@@ -19,21 +19,30 @@ class IndexSettings(BaseModel):
     key_size: Literal[4, 8] = 8
 
 
-class ColumnConfig(BaseModel):
+class _ColumnConfig(BaseModel):
     name: str
     typ: ColumnType
     num: int
 
 
-class SchemaConfig(BaseModel):
-    columns: list[ColumnConfig]
+class _SchemaConfig(BaseModel):
+    columns: list[_ColumnConfig]
+    name: str  # there is a reserved column named "schema_"
+    code: int
+
+
+class SchemasConfig(BaseModel):
+    __root__: list[_SchemaConfig]
+
+    def __iter__(self):
+        return iter(self.__root__)
 
 
 class DbMeta(BaseModel):
     disk: DiskConfig = DiskConfig()
     index: IndexSettings = IndexSettings()
     comment: str = ''
-    data_schema: None | SchemaConfig = None
+    schemas: None | SchemasConfig = None
 
 
 class BufferPoolConfig(BaseModel):
