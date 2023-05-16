@@ -11,7 +11,7 @@ class Client:
     def __init__(self, dsn: str, dbname: str):
         if dsn[-1] == '/':
             dsn = dsn[:-1]
-        self._dsn = dsn + "/rest"
+        self._dsn = dsn + f"/rest/{dbname}"
         self.dbname = dbname
         self._http_client = httpx.AsyncClient(base_url=self._dsn, timeout=10)
         self._schema = None
@@ -27,7 +27,7 @@ class Client:
         return r['data']
 
     async def connect(self):
-        schemas_str = await self._common_request("get", f"/schema/{self.dbname}")
+        schemas_str = await self._common_request("get", "/schema")
         self._schema = Schema(SchemasConfig.parse_raw(schemas_str))
 
     async def close(self) -> None:
@@ -36,19 +36,17 @@ class Client:
     @retry(stop=stop_after_attempt(2), reraise=True)
     async def get(self, key) -> list[dict]:
         assert self._schema is not None
-        db = self.dbname
 
-        data = await self._common_request("get", f"/data/{db}/{key}")
+        data = await self._common_request("get", f"/data/{key}")
 
         return [self._schema.unpack(_) for _ in CappedArray.RetrieveFromRaw(data)]
 
     async def put(self, key: int, value: dict, *, schema: str) -> Literal[True]:
         assert self._schema is not None
-        db = self.dbname
 
         ok = await self._common_request(
             "put",
-            f"/data/{db}/{key}",
+            f"/data/{key}",
             content=self._schema.pack(value, schema=schema),
         )
 

@@ -78,9 +78,9 @@ async def get_schema(request):
 
 
 rest_routes = [
-    Route("/data/{dbname:str}/{key:int}", put_data, methods=["PUT"]),
-    Route("/data/{dbname:str}/{key:int}", get_data, methods=["GET"]),
-    Route("/schema/{dbname:str}", get_schema, methods=["GET"]),
+    Route("/{dbname:str}/data/{key:int}", put_data, methods=["PUT"]),
+    Route("/{dbname:str}/data/{key:int}", get_data, methods=["GET"]),
+    Route("/{dbname:str}/schema", get_schema, methods=["GET"]),
 ]
 
 router = Router(rest_routes)
