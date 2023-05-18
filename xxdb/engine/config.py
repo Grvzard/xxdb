@@ -1,22 +1,19 @@
-from typing import Literal
+from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, FilePath
 from pb_encoding import SupportedType as ColumnType
 
-
-class PageConfig(BaseModel):
-    size_cost: int = 4  # do not change this
-    id_cost: int = 0  # unused
+from xxdb import __version__
 
 
 class DiskConfig(BaseModel):
+    typ: Literal['singlefile', 'multifile'] = 'singlefile'
+    # TODO：validate the page_size is a multiple of 512
     page_size: int = 2048
-    page: PageConfig = PageConfig()
-
-
-class IndexSettings(BaseModel):
-    typ: Literal['hashtable'] = 'hashtable'
     key_size: Literal[4, 8] = 8
+
+    def __init__(self, **data):
+        super().__init__(**data)
 
 
 class _ColumnConfig(BaseModel):
@@ -42,15 +39,33 @@ class SchemasConfig(BaseModel):
 
 
 class DbMeta(BaseModel):
+    version_: str = __version__
     disk: DiskConfig = DiskConfig()
-    index: IndexSettings = IndexSettings()
     comment: str = ''
-    schemas: None | SchemasConfig = None
+    schemas: Optional[SchemasConfig] = None
+
+    def __init__(self, **data):
+        super().__init__(**data)
 
 
 class BufferPoolConfig(BaseModel):
-    max_size: int = 128 * 1024 * 1024
+    max_pages: int = 300_000
     replacer: str = "fifo"
+
+
+# class SingleFileDiskConfig(BaseModel):
+#     typ: Literal['singlefile'] = 'singlefile'
+#     datadir: FilePath = FilePath('.')
+
+
+# class MultiFileDiskConfig(BaseModel):
+#     typ: Literal['multifile'] = 'multifile'
+#     datadir: str
+
+
+# class DiskConfig(BaseModel):
+#     typ: Literal['singlefile', 'multifile'] = 'singlefile'
+#     config: Union[SingleFileDiskConfig, MultiFileDiskConfig] = Field(SingleFileDiskConfig(), discriminator='typ')
 
 
 class PrometheusSettings(BaseModel):
@@ -59,5 +74,6 @@ class PrometheusSettings(BaseModel):
 
 class InstanceSettings(BaseModel):
     with_schema: bool = True
+    meta_path: Optional[FilePath] = None
     buffer_pool: BufferPoolConfig = BufferPoolConfig()
     prometheus: PrometheusSettings = PrometheusSettings()

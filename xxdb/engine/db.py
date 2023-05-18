@@ -1,13 +1,14 @@
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Union
 
 from xxdb.engine.buffer import BufferPoolManager
-from xxdb.engine.disk import DiskManager
+from xxdb.engine.disk import getDisk
+from xxdb.engine.meta import MetaManager
 from xxdb.engine.metrics import PrometheusClient
-from xxdb.engine.hashtable import HashTable
 from xxdb.engine.config import InstanceSettings, DbMeta
 from xxdb.engine.schema import Schema, SchemasConfig
+from xxdb.engine.hashtable import HashTable
 
 __all__ = ("DB", "create", "InstanceSettings", "DbMeta")
 
@@ -18,31 +19,34 @@ class DB:
     def __init__(
         self,
         name: str,
-        datadir: str = ".",
-        settings: InstanceSettings = InstanceSettings(),
+        meta_dpath: Union[str, Path],
+        settings: InstanceSettings,
     ):
         self._config = settings
         self._name = name
 
-        datadir_path = Path(datadir)
-        assert datadir_path.exists()
+        if isinstance(meta_dpath, str):
+            meta_dpath = Path(meta_dpath)
+        meta_fpath = meta_dpath / f"{self._name}.meta.xxdb"
+        try:
+            self._meta = MetaManager.from_path(meta_fpath)
+        except FileNotFoundError:
+            raise Exception(f"{meta_fpath!r} not found")
+        except Exception as e:
+            raise Exception(f"read meta failed: {e}")
 
-        dat_path = datadir_path / f"{self._name}.dat.xxdb"
-        assert dat_path.exists()
-
-        self._meta = DbMeta.parse_raw(DiskManager.read_meta(dat_path.open("rb")))
         self._schema = None
         if self._meta.schemas and self._config.with_schema:
             self._schema = Schema(self._meta.schemas)
 
-        self._disk_mgr = DiskManager(datadir, self._name, self._meta.disk)
-        self._bp_mgr = BufferPoolManager(self._disk_mgr, self._config.buffer_pool)
+        idx_fpath = meta_dpath / f"{self._name}.idx.xxdb"
+        self._disk = getDisk(self._name, meta_dpath, self._meta.disk)
+        self._idx = HashTable(idx_fpath, key_size=self._meta.disk.key_size, value_size=self._disk.pageid_size)
+        self._buffer = BufferPoolManager(self._disk, self._config.buffer_pool)
 
-        idx_path = datadir_path / f"{self._name}.idx.xxdb"
-        self._indices = HashTable(idx_path, self._meta.index)
         self._prom_client = None
         if self._config.prometheus.enable:
-            self._prom_client = PrometheusClient(self._bp_mgr, self._name)
+            self._prom_client = PrometheusClient(self._buffer, self._name)
 
     @property
     def data_schemas(self) -> None | SchemasConfig:
@@ -56,11 +60,10 @@ class DB:
         key: int,
         mode: Literal["bytes", "dict", "raw"] = "bytes",
     ) -> None | list[bytes] | list[dict] | bytes:
-        pageid = self._indices[key]
+        pageid = self._idx[key]
         if pageid is None:
             return None
-
-        async with self._bp_mgr.fetch_page(pageid) as page:
+        async with self._buffer.fetch_page(pageid) as page:
             if mode == "dict":
                 if not self._schema:
                     raise Exception()
@@ -82,19 +85,20 @@ class DB:
                 raise Exception("schema(name) is required for multi schema db")
             data = self._schema.pack(data, schema=schema)
 
-        pageid = self._indices[key]
-        if pageid is not None:
-            async with self._bp_mgr.fetch_page(pageid) as page:
+        pageid = self._idx[key]
+        if pageid is None:
+            async with self._buffer.new_page() as page:
+                pageid = page.id
+                self._idx[key] = pageid
                 page.append(data)
         else:
-            async with self._bp_mgr.new_page() as page:
-                self._indices[key] = page.id
+            async with self._buffer.fetch_page(pageid) as page:
                 page.append(data)
 
     async def flush(self):
         logger.info("xxdb flushing...")
-        await self._bp_mgr.flush_all()
-        self._indices.flush()
+        await self._buffer.flush_all()
+        self._idx.flush()
         logger.info("xxdb flush done")
 
     @property
@@ -104,27 +108,28 @@ class DB:
         return None
 
 
-# Return: True if created a new meta file, False if meta file already exists
 def create(
     name: str,
-    meta: DbMeta = DbMeta(),
-    datadir: str = ".",
+    cfg_fpath: Path,
     exists_ok: bool = True,
-) -> bool:
-    datadir_path = Path(datadir)
-    if datadir_path.exists():
-        if not datadir_path.is_dir():
-            raise Exception(f"datadir: {datadir} is not a directory")
+) -> Path:
+    if not cfg_fpath.exists():
+        raise Exception(f"config file not found: {cfg_fpath!r}")
+    meta = DbMeta.parse_file(cfg_fpath)
+
+    meta_dpath = cfg_fpath.parent / name
+    meta_fpath = meta_dpath / f"{name}.meta.xxdb"
+
+    if meta_dpath.exists():
+        if not meta_dpath.is_dir():
+            raise Exception(f"datadir: {meta_dpath!r} is not a directory")
     else:
-        datadir_path.mkdir(777)
-        logger.info(f"created datadir: {datadir}")
+        meta_dpath.mkdir(777)
+        logger.info(f"created datadir: {meta_dpath!r}")
 
-    dat_path = datadir_path / f"{name}.dat.xxdb"
-
-    if dat_path.exists():
+    if meta_fpath.exists():
         if not exists_ok:
-            raise Exception("dat file already exists")
-        return False
+            raise Exception("db meta file already exists")
 
-    DiskManager.write_meta(dat_path.open("wb"), meta.json().encode())
-    return True
+    MetaManager.write_meta(meta_fpath.open("wb"), meta.json().encode("utf-8"))
+    return meta_dpath

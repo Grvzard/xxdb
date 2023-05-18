@@ -4,8 +4,9 @@ from xxdb.engine.config import InstanceSettings
 
 
 class DbSettings(BaseModel):
-    path: str
     name: str
+    # one of the following 2 must be set
+    path: str = ''
     cfg: str = ''
     settings: InstanceSettings = InstanceSettings()
     flush_period: int = 5  # in seconds

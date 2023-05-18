@@ -1,25 +1,28 @@
 # Referenced by: DB
-from typing import Iterator
+from typing import Iterator, Literal
 from pathlib import Path
 import mmap
 import struct
 
-from xxdb.engine.config import IndexSettings
 
-
+# | len(4 bytes) | key1 | value1 | key2 | value2 | ...
 class HashTable:
-    def __init__(self, idx_path: Path, settings: IndexSettings):
-        idx_path.touch(exist_ok=True)
-        self._fp = open(idx_path, "r+b")
-        self._key_size = settings.key_size
-        self._value_size = 4
+    def __init__(self, idx_fpath: Path, key_size: Literal[4, 8], value_size: Literal[4, 8]):
+        idx_fpath.touch(exist_ok=True)
+        self._fp = open(idx_fpath, "r+b")
+        self._key_size = key_size
+        self._value_size = value_size
         self._kv_size = self._key_size + self._value_size
         self._struct_format = {
-            4: "<IL",
-            8: "<QL",
-        }[self._key_size]
+            (4, 4): "<II",
+            (8, 4): "<QI",
+            (4, 8): "<IQ",
+            (8, 8): "<QQ",
+        }[
+            (self._key_size, self._value_size)
+        ]  # type: ignore
 
-        if (_file_size := idx_path.stat().st_size) == 0:
+        if (_file_size := idx_fpath.stat().st_size) == 0:
             _init_size = 16 * 1024  # 16KB
             self._fp.write(b'\x00' * _init_size)
             self._fp.seek(0)

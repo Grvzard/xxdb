@@ -16,5 +16,7 @@ class Server:
         _uvicorn_config = uvicorn.Config(_app, **self.config['server'])
         self._server = uvicorn.Server(_uvicorn_config)
 
+        self.debug = self.config['server'].get('debug', False)
+
     def serve(self) -> Coroutine:
         return self._server.serve()

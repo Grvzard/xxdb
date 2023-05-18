@@ -1,0 +1,35 @@
+# Referenced by: DB
+from abc import abstractmethod
+from typing import Literal
+
+from .page import Page
+
+__all__ = ("Disk",)
+
+
+class Disk:
+    @property
+    @abstractmethod
+    def pageid_size(self) -> Literal[4, 8]:
+        ...
+
+    @abstractmethod
+    async def new_page(self) -> Page:
+        ...
+
+    @abstractmethod
+    async def read_page(self, pageid: int) -> Page:
+        ...
+
+    @abstractmethod
+    async def write_page(self, page: Page) -> None:
+        ...
+
+    async def init(self):
+        ...
+
+    async def flush(self):
+        ...
+
+    async def close(self):
+        ...

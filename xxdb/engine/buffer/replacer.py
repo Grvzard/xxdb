@@ -1,16 +1,24 @@
 from abc import ABC, abstractmethod
-from typing import Optional
-
-from ..page import Page
+from typing import Generic, Optional, TypeVar
 
 
-class Replacer(ABC):
+class Evictable:
+    @property
+    @abstractmethod
+    def evictable(self) -> bool:
+        ...
+
+
+E = TypeVar('E', bound=Evictable)
+
+
+class Replacer(ABC, Generic[E]):
     @abstractmethod
     def record_access(self, pageid: int):
         ...
 
     @abstractmethod
-    def evict(self, pool: dict[int, Page]) -> Optional[int]:
+    def evict(self, pool: dict[int, E]) -> Optional[int]:
         ...
 
 
@@ -22,7 +30,7 @@ class FifoReplacer(Replacer):
         if pageid not in self.record:
             self.record[pageid] = True
 
-    def evict(self, pool: dict[int, Page]) -> Optional[int]:
+    def evict(self, pool: dict[int, E]) -> Optional[int]:
         evicted = None
         for pageid in self.record:
             if pool[pageid].evictable:
@@ -42,7 +50,7 @@ class LruReplacer(Replacer):
     def record_access(self, pageid: int):
         ...
 
-    def evict(self, pool: dict[int, Page]) -> Optional[int]:
+    def evict(self, pool: dict[int, E]) -> Optional[int]:
         ...
 
 
@@ -54,7 +62,7 @@ class LrukReplacer(Replacer):
     def record_access(self, pageid: int):
         ...
 
-    def evict(self, pool: dict[int, Page]) -> Optional[int]:
+    def evict(self, pool: dict[int, E]) -> Optional[int]:
         ...
 
 
