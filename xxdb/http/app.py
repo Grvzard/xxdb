@@ -27,8 +27,10 @@ async def close_db(db: DB):
 def flush_db_periodically(db: DB, seconds: int):
     async def func():
         while 1:
-            await asyncio.sleep(seconds)
-            await db.flush()
+            await asyncio.gather(
+                asyncio.sleep(seconds),
+                db.flush(),
+            )
 
     bg_task = asyncio.create_task(func())
     BG_TASKS.add(bg_task)

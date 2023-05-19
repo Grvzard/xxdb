@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -22,30 +23,21 @@ class BufferPoolManager(EventEmitter):
         self.dirty_pageids: set[int] = set()
         self._max_page_amount = self.config.max_pages
 
-    @asynccontextmanager
-    async def new_page(self):
-        if len(self.pool) >= self._max_page_amount:
-            if not await self.try_evict():
-                raise Exception()
-        page = await self.disk.new_page()
+    def new_page(self) -> int:  # pageid
+        page = self.disk.new_page()
+        page.is_dirty = True
+        self.dirty_pageids.add(page.id)
         self.pool[page.id] = page
-
-        self.replacer.record_access(page.id)
-        page.pin()
-        try:
-            yield page
-        finally:
-            page.is_dirty = True
-            self.dirty_pageids.add(page.id)
-            page.unpin()
+        return page.id
 
     @asynccontextmanager
     async def fetch_page(self, pageid):
-        if pageid not in self.pool:
-            if len(self.pool) >= self._max_page_amount and not await self.try_evict():
-                raise Exception()
+        if len(self.pool) >= self._max_page_amount and not await self.try_evict():
+            raise Exception()
 
-            page = await self.disk.read_page(pageid)
+        if pageid not in self.pool:
+            # page = await self.disk.read_page(pageid)
+            page = await asyncio.to_thread(self.disk.read_page, pageid)
             self.pool[pageid] = page
         else:
             page = self.pool[pageid]
@@ -77,7 +69,8 @@ class BufferPoolManager(EventEmitter):
             logger.debug(f"flush dirty page: {page.id}")
             page.is_dirty = False
             self.dirty_pageids.discard(page.id)
-            await self.disk.write_page(page)
+            await asyncio.to_thread(self.disk.write_page, page)
+            # await self.disk.write_page(page)
             await self._emit("flush")
 
     async def try_evict(self) -> bool:

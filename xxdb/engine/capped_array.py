@@ -7,10 +7,10 @@ class CappedArray:
     # TODO: use varint instead of fixed size
     DATA_SIZE_COST = 2
 
-    def __init__(self, page_data: bytes, capacity: int):
-        self._data = bytearray(page_data)
+    def __init__(self, array_data: bytes, capacity: int):
+        self._data = bytearray(array_data)
         self._cap = capacity
-        self._curr_size = len(page_data)
+        self._curr_size = len(array_data)
 
     @property
     def free_size(self) -> int:

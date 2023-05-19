@@ -87,13 +87,11 @@ class DB:
 
         pageid = self._idx[key]
         if pageid is None:
-            async with self._buffer.new_page() as page:
-                pageid = page.id
-                self._idx[key] = pageid
-                page.append(data)
-        else:
-            async with self._buffer.fetch_page(pageid) as page:
-                page.append(data)
+            pageid = self._buffer.new_page()
+            self._idx[key] = pageid
+
+        async with self._buffer.fetch_page(pageid) as page:
+            page.append(data)
 
     async def flush(self):
         logger.info("xxdb flushing...")

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from functools import partial
 
@@ -68,9 +69,9 @@ async def _process_cmd(pb_req, db) -> pb.CommonResponse:
         pb_resp.status = pb.CommonResponse.Status.OK
 
     if pb_req.command == pb_req.Command.BULK_PUT:
-        for put_payload in pb_req.bulkput_payload:
-            key = int(put_payload.key)
-            await db.put(key, put_payload.value)
+        await asyncio.gather(
+            *[db.put(int(put_payload.key), put_payload.value) for put_payload in pb_req.bulkput_payload]
+        )
 
     elif pb_req.command == pb_req.Command.GET:
         data = await db.get(int(pb_req.op_key), mode="raw")

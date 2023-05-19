@@ -14,15 +14,15 @@ class Disk:
         ...
 
     @abstractmethod
-    async def new_page(self) -> Page:
+    def new_page(self) -> Page:
         ...
 
     @abstractmethod
-    async def read_page(self, pageid: int) -> Page:
+    def read_page(self, pageid: int) -> Page:
         ...
 
     @abstractmethod
-    async def write_page(self, page: Page) -> None:
+    def write_page(self, page: Page) -> None:
         ...
 
     async def init(self):

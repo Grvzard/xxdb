@@ -1,16 +1,15 @@
 from xxdb.engine.capped_array import CappedArray
 
 
-def disabled_test():
+def test():
     test_size = 40
-    data = b'\x00' * test_size
 
-    arr = CappedArray(data)
+    arr = CappedArray(b'', test_size)
     arr.append(b'hello')
     arr.append(b'  okok')
-    assert len(arr.dumps()) == test_size
+    assert len(arr.dumps_data()) == 15
 
-    arr2 = CappedArray(arr.dumps())
+    arr2 = CappedArray(arr.dumps_data(), test_size)
     assert arr2.retrieve() == [b'hello', b'  okok']
 
     arr2.append(b'1' * 21)
