@@ -17,23 +17,31 @@ from .rest_server import router as rest_router
 __all__ = ("create_app", "AppConfig")
 
 
-BG_TASKS = set()
+bg_task = None
 
 
 async def close_db(db: DB):
+    bg_task.cancel()  # type: ignore
+    try:
+        await bg_task  # type: ignore
+    except asyncio.CancelledError:
+        ...
     await db.close()
 
 
 def flush_db_periodically(db: DB, seconds: int):
     async def func():
         while 1:
-            await asyncio.gather(
-                asyncio.sleep(seconds),
-                db.flush(),
-            )
+            try:
+                await asyncio.gather(
+                    asyncio.sleep(seconds),
+                    db.flush(),
+                )
+            except asyncio.CancelledError:
+                break
 
+    global bg_task
     bg_task = asyncio.create_task(func())
-    BG_TASKS.add(bg_task)
 
 
 async def ping(request):

@@ -84,3 +84,7 @@ class BufferPoolManager(EventEmitter):
             return True
 
         return False
+
+    async def close(self) -> None:
+        await self.flush_all()
+        self._thread_pool.shutdown()

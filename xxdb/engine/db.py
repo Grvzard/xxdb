@@ -53,7 +53,9 @@ class DB:
         return self._meta.schemas
 
     async def close(self):
-        await self.flush()
+        await self._buffer.close()
+        await self._disk.close()
+        self._idx.close()
 
     async def get(
         self,

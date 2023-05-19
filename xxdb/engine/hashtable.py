@@ -70,4 +70,4 @@ class HashTable:
     def close(self):
         self.flush()
         self._mm.close()
-        self._fp.close()
+        # self._fp.close()
