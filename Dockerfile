@@ -15,5 +15,5 @@ VOLUME /app/data
 
 EXPOSE 7791
 
-ENTRYPOINT ["xxdb"]
+ENTRYPOINT ["xxdb", "serve"]
 CMD ["--config", "xxdb.toml"]
