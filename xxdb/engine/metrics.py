@@ -12,7 +12,7 @@ class PrometheusClient:
         self._bufferpool_evict_cnt = Counter_("bufferpool_evict", "")
 
         @bp_mgr.on("evict")
-        async def on_bufferpool_evict():
+        def on_bufferpool_evict():
             self._bufferpool_evict_cnt.labels(dbname).inc()
 
         self._bufferpool_size = Gauge_("bufferpool_size", "")
@@ -24,7 +24,7 @@ class PrometheusClient:
         self._bufferpool_flush_cnt = Counter_("bufferpool_flush_cnt", "")
 
         @bp_mgr.on("flush")
-        async def on_bufferpool_flush():
+        def on_bufferpool_flush():
             self._bufferpool_flush_cnt.labels(dbname).inc()
 
     @property

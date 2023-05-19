@@ -46,6 +46,7 @@ class MultiFile(Disk):
         [_bio.flush() for _bio in self._block_list]
 
     async def close(self):
+        await self.flush()
         [_bio.close() for _bio in self._block_list]
 
     def new_page(self) -> Page:
@@ -57,13 +58,11 @@ class MultiFile(Disk):
     def read_page(self, pageid: int) -> Page:
         blockid, part_pageid = self._calc_offset(pageid)
         bio = self._get_bio(blockid)
-        bio.seek(part_pageid)
-        return Page(bio.read1(), pageid)
+        return Page(bio.seek_read1(part_pageid), pageid)
 
     def write_page(self, page: Page) -> None:
         pageid = page.id
         blockid, part_pageid = self._calc_offset(pageid)
         bio = self._get_bio(blockid)
-        bio.seek(part_pageid)
-        bio.write(page.dumps_page())
+        bio.seek_write(part_pageid, page.dumps_page())
         bio.flush()

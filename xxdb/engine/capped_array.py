@@ -7,6 +7,8 @@ class CappedArray:
     # TODO: use varint instead of fixed size
     DATA_SIZE_COST = 2
 
+    __slots__ = ("_data", "_cap", "_curr_size")
+
     def __init__(self, array_data: bytes, capacity: int):
         self._data = bytearray(array_data)
         self._cap = capacity
