@@ -124,7 +124,7 @@ def create(
         if not meta_dpath.is_dir():
             raise Exception(f"datadir: {meta_dpath!r} is not a directory")
     else:
-        meta_dpath.mkdir(777)
+        meta_dpath.mkdir()
         logger.info(f"created datadir: {meta_dpath!r}")
 
     if meta_fpath.exists():
