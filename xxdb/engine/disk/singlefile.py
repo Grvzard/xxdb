@@ -40,9 +40,9 @@ class SingleFile(Disk):
 
     async def read_page(self, pageid: int) -> Page:
         self._bio.seek(pageid)
-        return Page(await self._bio.read1(), pageid)
+        return Page(self._bio.read1(), pageid)
 
     async def write_page(self, page: Page) -> None:
         pageid = page.id
         self._bio.seek(pageid)
-        await self._bio.write(page.dumps_page())
+        self._bio.write(page.dumps_page())

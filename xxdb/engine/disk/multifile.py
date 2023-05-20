@@ -32,7 +32,7 @@ class MultiFile(Disk):
 
     def _get_bio(self, blockid: int):
         if blockid >= len(self._block_list):
-            print((blockid, len(self._block_list)))
+            print((blockid, len(self._block_list)), flush=True)
             bio_fpath = self._data_dpath / f"{self._name}.{blockid}.dat.xxdb"
             bio = BlockIO(bio_fpath, self._page_size)
             self._block_list.append(bio)
@@ -55,6 +55,11 @@ class MultiFile(Disk):
 
     def new_page(self) -> Page:
         pageid = self._next_pageid
+        blockid, part_pageid = self._calc_offset(pageid)
+        if part_pageid == 0:
+            # init bio (create file)
+            _ = self._get_bio(blockid)
+            print(f"new block: {blockid}", flush=True)
         self._next_pageid += 1
         page_data = self.gen_empty_page
         return Page(page_data, pageid)
