@@ -18,11 +18,11 @@ class Disk:
         ...
 
     @abstractmethod
-    def read_page(self, pageid: int) -> Page:
+    async def read_page(self, pageid: int) -> Page:
         ...
 
     @abstractmethod
-    def write_page(self, page: Page) -> None:
+    async def write_page(self, page: Page) -> None:
         ...
 
     async def init(self):

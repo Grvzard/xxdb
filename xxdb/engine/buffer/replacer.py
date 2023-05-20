@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, Container, Mapping
 
 
 class Evictable:
@@ -27,13 +27,12 @@ class FifoReplacer(Replacer):
         self.record = {}
 
     def record_access(self, pageid: int):
-        if pageid not in self.record:
-            self.record[pageid] = True
+        self.record[pageid] = True
 
-    def evict(self, pool: dict[int, E]) -> Optional[int]:
+    def evict(self, pool: Mapping[int, E], wait_list: Container) -> Optional[int]:
         evicted = None
         for pageid in self.record:
-            if pool[pageid].evictable:
+            if pool[pageid].evictable and pageid not in wait_list:
                 evicted = pageid
                 break
         else:

@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 
 from .disk import Disk
@@ -31,6 +32,7 @@ class MultiFile(Disk):
 
     def _get_bio(self, blockid: int):
         if blockid >= len(self._block_list):
+            print((blockid, len(self._block_list)))
             bio_fpath = self._data_dpath / f"{self._name}.{blockid}.dat.xxdb"
             bio = BlockIO(bio_fpath, self._page_size)
             self._block_list.append(bio)
@@ -47,6 +49,8 @@ class MultiFile(Disk):
 
     async def close(self):
         await self.flush()
+        print(self._next_pageid, flush=True)
+        print([bio.page_len for bio in self._block_list], flush=True)
         [_bio.close() for _bio in self._block_list]
 
     def new_page(self) -> Page:
@@ -55,14 +59,21 @@ class MultiFile(Disk):
         page_data = self.gen_empty_page
         return Page(page_data, pageid)
 
-    def read_page(self, pageid: int) -> Page:
+    async def read_page(self, pageid: int) -> Page:
         blockid, part_pageid = self._calc_offset(pageid)
         bio = self._get_bio(blockid)
-        return Page(bio.seek_read1(part_pageid), pageid)
+        try:
+            # return Page(bio.seek_read1(part_pageid), pageid)
+            page_data = await asyncio.to_thread(bio.seek_read1, part_pageid)
+            return Page(page_data, pageid)
+        except Exception as e:
+            print(f"block: {blockid}")
+            raise e
 
-    def write_page(self, page: Page) -> None:
+    async def write_page(self, page: Page) -> None:
         pageid = page.id
         blockid, part_pageid = self._calc_offset(pageid)
         bio = self._get_bio(blockid)
-        bio.seek_write(part_pageid, page.dumps_page())
+        await asyncio.to_thread(bio.seek_write, part_pageid, page.dumps_page())
+        # bio.seek_write(part_pageid, page.dumps_page())
         bio.flush()
