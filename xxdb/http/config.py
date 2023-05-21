@@ -17,3 +17,6 @@ class AppConfig(BaseModel):
     cors_origins: list[str] = ["*"]
     allowed_hosts: list[str] = ["*"]
     auto_create: bool = True
+
+    # for debug use
+    tracemalloc: bool = False
