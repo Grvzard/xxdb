@@ -24,22 +24,16 @@ class Replacer(ABC, Generic[E]):
 
 class FifoReplacer(Replacer):
     def __init__(self) -> None:
-        self.record = {}
+        ...
 
     def record_access(self, pageid: int):
-        self.record[pageid] = True
+        ...
 
     def evict(self, pool: Mapping[int, E], wait_list: Container) -> Optional[int]:
-        evicted = None
-        for pageid in self.record:
-            if pool[pageid].evictable and pageid not in wait_list:
-                evicted = pageid
-                break
-        else:
-            return None
-
-        self.record.pop(evicted)
-        return evicted
+        for pageid, page in pool.items():
+            if page.evictable and pageid not in wait_list:
+                return pageid
+        return None
 
 
 class LruReplacer(Replacer):
