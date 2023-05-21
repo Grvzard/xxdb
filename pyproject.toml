@@ -19,10 +19,13 @@ server = [
     "protobuf",  # http requires
     "websockets",  # ws server requires
     "starlette",  # server requires
-    "uvicorn[standard]",  # server requires
-    "httpx",  # rest client requires
-    "tenacity",  # rest client requires
-    "aiohttp",  # ws client requires
+    "uvicorn",  # server requires
+]
+client = [
+    "protobuf",
+    "httpx",
+    "tenacity",
+    "websockets",
 ]
 
 [project.scripts]

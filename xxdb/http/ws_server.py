@@ -21,7 +21,12 @@ async def ws_handler(ws, db: DB):
     assert data_schemas is not None
     await ws.accept()
 
-    auth_msg = await ws.receive_bytes()
+    try:
+        auth_msg = await ws.receive_bytes()
+    except Exception as exc:
+        logger.error(f"receive auth request failed: {exc}")
+        await ws.close()
+        return
     auth_req = pb.AuthRequest()
     try:
         auth_req.ParseFromString(auth_msg)
