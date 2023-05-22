@@ -1,6 +1,5 @@
 from threading import Lock
 
-from typing import Final
 from pathlib import Path
 
 __all__ = ("BlockIO",)
@@ -9,7 +8,7 @@ __all__ = ("BlockIO",)
 class BlockIO:
     META_PAGE_SIZE = 16 * 1024
 
-    __slots__ = ("_fio", "_fpath", "_page_size", "_empty_block", "_lock")
+    __slots__ = ("_fio", "_fpath", "_page_size", "_lock")
 
     def __init__(self, fpath: Path, page_size: int):
         self._page_size = page_size
@@ -17,8 +16,6 @@ class BlockIO:
         self._fpath = fpath
         self._fio = fpath.open('r+b', buffering=0)
         self._lock = Lock()
-
-        self._empty_block: Final[bytes] = b'\x00' * self._page_size
 
     @property
     def page_len(self) -> int:

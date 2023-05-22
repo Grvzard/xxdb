@@ -8,15 +8,16 @@ from .blockio import BlockIO
 
 class MultiFile(Disk):
     PAGEID_SIZE = 4
-    SINGLE_FILE_SIZE = 64 * 1024 * 1024  # 64MB
+    # SINGLE_FILE_SIZE = 64 * 1024 * 1024  # 64MB
 
     def __init__(self, name, data_dpath, config):
         self._name = name
         self._data_dpath = Path(data_dpath)
         self._config = config
+        self._BLOCK_SIZE = self._config.params['block_size'] * 1024 * 1024  # MB
 
         self._page_size = self._config.page_size
-        self._page_per_file = self.SINGLE_FILE_SIZE // self._page_size
+        self._page_per_file = self._BLOCK_SIZE // self._page_size
         _block_fpath_list = list(self._data_dpath.glob(f'{self._name}.*.dat.xxdb'))
         _block_fpath_list.sort(key=lambda fpath: int(fpath.name.split('.')[1]))
         self._block_list = [BlockIO(fpath, self._page_size) for fpath in _block_fpath_list]

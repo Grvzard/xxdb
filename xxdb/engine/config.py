@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Any
 
 from pydantic import BaseModel, FilePath
 from pb_encoding import SupportedType as ColumnType
@@ -11,6 +11,10 @@ class DiskConfig(BaseModel):
     # TODO：validate the page_size is a multiple of 512
     page_size: int = 2048
     key_size: Literal[4, 8] = 8
+
+    # which will be passed to the disk class
+    # multifile needs a block_size, sized in MB
+    params: dict[str, Any] = {}
 
     def __init__(self, **data):
         super().__init__(**data)
