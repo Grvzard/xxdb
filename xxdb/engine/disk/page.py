@@ -58,10 +58,4 @@ class Page(CappedArray, Evictable):
             self.lsn.to_bytes(self.LSN_COST, "little") + _curr_size.to_bytes(self.SIZE_COST, "little") + self.MAGIC_FOOT
         )
 
-        if super().free_size > 2032:
-            print("free size")
-            print(self.free_size)
-            print(self._cap)
-            print(self._curr_size)
-
         return _raw_data + b'\x00' * super().free_size + page_meta
