@@ -8,7 +8,7 @@ from xxdb.engine.meta import MetaManager
 from xxdb.engine.metrics import PrometheusClient
 from xxdb.engine.config import InstanceSettings, DbMeta
 from xxdb.engine.schema import Schema, SchemasConfig
-from xxdb.engine.hashtable import HashTable
+from xxdb.engine.index import getIndex
 
 __all__ = ("DB", "create", "InstanceSettings", "DbMeta")
 
@@ -39,9 +39,8 @@ class DB:
         if self._meta.schemas and self._config.with_schema:
             self._schema = Schema(self._meta.schemas)
 
-        idx_fpath = meta_dpath / f"{self._name}.idx.xxdb"
         self._disk = getDisk(self._name, meta_dpath, self._meta.disk)
-        self._idx = HashTable(idx_fpath, key_size=self._meta.disk.key_size, value_size=self._disk.pageid_size)
+        self._idx = getIndex(self._name, meta_dpath, self._meta.index)
         self._buffer = BufferPoolManager(self._disk, self._config.buffer_pool)
 
         self._prom_client = None

@@ -12,12 +12,28 @@ class DiskConfig(BaseModel):
     page_size: int = 2048
     key_size: Literal[4, 8] = 8
 
+    pageid_size: int = 0  # will be auto filled based on typ
+
     # which will be passed to the disk class
     # multifile needs a block_size, sized in MB
     params: dict[str, Any] = {}
 
     def __init__(self, **data):
         super().__init__(**data)
+        self.pageid_size = {
+            'singlefile': 4,
+            'multifile': 4,
+        }[self.typ]
+
+
+class IndexConfig(BaseModel):
+    typ: Literal['sqlite', 'hashtable'] = 'hashtable'
+
+    key_size: int = 0  # will be auto filled by DbMeta
+    value_size: int = 0  # will be auto filled by DbMeta
+
+    # which will be passed to the index class
+    params: dict[str, Any] = {}
 
 
 class _ColumnConfig(BaseModel):
@@ -45,11 +61,14 @@ class SchemasConfig(BaseModel):
 class DbMeta(BaseModel):
     version_: str = __version__
     disk: DiskConfig = DiskConfig()
+    index: IndexConfig = IndexConfig()
     comment: str = ''
     schemas: Optional[SchemasConfig] = None
 
     def __init__(self, **data):
         super().__init__(**data)
+        self.index.key_size = self.disk.key_size
+        self.index.value_size = self.disk.pageid_size
 
 
 class BufferPoolConfig(BaseModel):

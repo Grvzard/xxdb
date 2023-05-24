@@ -4,9 +4,11 @@ from pathlib import Path
 import mmap
 import struct
 
+from .index import Index
+
 
 # | len(4 bytes) | key1 | value1 | key2 | value2 | ...
-class HashTable:
+class HashTable(Index):
     def __init__(self, idx_fpath: Path, key_size: Literal[4, 8], value_size: Literal[4, 8]):
         idx_fpath.touch(exist_ok=True)
         self._fp = open(idx_fpath, "r+b")
