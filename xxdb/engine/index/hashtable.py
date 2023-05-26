@@ -15,11 +15,11 @@ class HashTable(Index):
         self._key_size = key_size
         self._value_size = value_size
         self._kv_size = self._key_size + self._value_size
-        self._struct_format = {
-            (4, 4): "<II",
-            (8, 4): "<QI",
-            (4, 8): "<IQ",
-            (8, 8): "<QQ",
+        self._struct = {
+            (4, 4): struct.Struct("<II"),
+            (8, 4): struct.Struct("<QI"),
+            (4, 8): struct.Struct("<IQ"),
+            (8, 8): struct.Struct("<QQ"),
         }[
             (self._key_size, self._value_size)
         ]  # type: ignore
@@ -34,7 +34,7 @@ class HashTable(Index):
         else:
             self._len = int.from_bytes(self._fp.read(4), "little")
             self._cap = (_file_size - 4) // self._kv_size
-            self._table = dict(struct.iter_unpack(self._struct_format, self._fp.read(self._len * self._kv_size)))
+            self._table = dict(self._struct.iter_unpack(self._fp.read(self._len * self._kv_size)))
 
         self._mm = mmap.mmap(self._fp.fileno(), 0)
         self._mm.seek(4 + self._len * self._kv_size)
