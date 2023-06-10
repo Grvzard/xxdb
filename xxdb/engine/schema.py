@@ -1,6 +1,5 @@
 # Referenced in: engine.DB, http.ws_client
 from collections import namedtuple
-from typing import Final
 
 from pb_encoding import getEncoder, getDecoder
 
@@ -21,14 +20,13 @@ class Schema:
             raise Exception("duplicate schema code")
         self._schema_code_map = {s.name: s.code for s in schemas}
         self._schema_name_map = {s.code: s.name for s in schemas}
-        self._cols: dict[int, list[SchemaColumn]] = {}
-
-        for s in schemas:
-            _s_columns: Final[list] = [
+        self._cols: dict[int, list[SchemaColumn]] = {
+            s.code: [
                 SchemaColumn(col.name, getEncoder(col.typ), getDecoder(col.typ))
                 for col in sorted(s.columns, key=lambda col: col.num)
             ]
-            self._cols[s.code] = _s_columns
+            for s in schemas
+        }
 
     def unpack(self, data_bytes: bytes) -> dict:
         schema_code = data_bytes[0]
