@@ -9,6 +9,7 @@ from xxdb.engine.metrics import PrometheusClient
 from xxdb.engine.config import InstanceSettings, DbMeta
 from xxdb.engine.schema import Schema, SchemasConfig
 from xxdb.engine.index import getIndex
+from xxdb.utils import cmp_version
 
 __all__ = ("DB", "create", "InstanceSettings", "DbMeta")
 
@@ -34,6 +35,11 @@ class DB:
             raise Exception(f"{meta_fpath!r} not found")
         except Exception as e:
             raise Exception(f"read meta failed: {e}")
+        print(self._meta.version_)
+        if cmp_version(self._meta.version_, "2.2.0") <= 0:
+            raise Exception(
+                "there is a breaking change in xxdb.engine 2.3.0, it can't be compatible with the old version"
+            )
 
         self._schema = None
         if self._meta.schemas and self._config.with_schema:
