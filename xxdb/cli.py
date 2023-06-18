@@ -14,6 +14,19 @@ cli = typer.Typer()
 def serve(config: str = 'xxdb.toml'):
     server = Server(config)
     if server.debug:
+        import tracemalloc
+
+        def print_tracemalloc():
+            snapshot = tracemalloc.take_snapshot()
+            top_stats = snapshot.statistics("lineno")
+
+            with open("tracemalloc.txt", "w") as fp:
+                fp.write("[ Top 30 ]\n")
+                for stat in top_stats[:30]:
+                    fp.write(str(stat) + "\n")
+
+        tracemalloc.start()
+
         import cProfile
 
         pr = cProfile.Profile()
@@ -21,6 +34,7 @@ def serve(config: str = 'xxdb.toml'):
 
         asyncio.run(server.serve())
 
+        print_tracemalloc()
         pr.disable()
         pr.dump_stats('xxdb.prof')
     else:

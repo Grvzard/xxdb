@@ -44,18 +44,6 @@ def flush_db_periodically(db: DB, seconds: int):
     bg_tasks.add(asyncio.create_task(func()))
 
 
-def print_tracemalloc():
-    import tracemalloc
-
-    snapshot = tracemalloc.take_snapshot()
-    top_stats = snapshot.statistics("lineno")
-
-    with open("tracemalloc.txt", "w") as fp:
-        fp.write("[ Top 30 ]\n")
-        for stat in top_stats[:30]:
-            fp.write(str(stat) + "\n")
-
-
 async def ping(request):
     _ = request
     return Response("pong", media_type="text/plain")
@@ -70,12 +58,6 @@ def create_app(config: AppConfig) -> Starlette:
     app.add_route("/ping", ping, methods=["GET"])
 
     app.mount("/rest", rest_router)
-
-    if config.tracemalloc:
-        import tracemalloc
-
-        tracemalloc.start()
-        app.add_event_handler("shutdown", print_tracemalloc)
 
     for db in config.databases:
         if db.path:
