@@ -129,6 +129,7 @@ def create(
     if meta_fpath.exists():
         if not exists_ok:
             raise Exception("db meta file already exists")
+    else:
+        MetaManager.write_meta(meta_fpath.open("wb"), meta.json().encode("utf-8"))
 
-    MetaManager.write_meta(meta_fpath.open("wb"), meta.json().encode("utf-8"))
     return meta_dpath
